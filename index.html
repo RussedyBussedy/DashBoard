@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Financial Dashboard</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    
+    <!-- Google Fonts for typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* A slightly darker gray for better contrast */
+        }
+        /* Custom styles for the file drop zone */
+        .drop-zone {
+            transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+        }
+        .drop-zone--over {
+            background-color: #e0e7ff;
+            border-color: #4f46e5;
+        }
+        /* Custom styles for the loader animation */
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #4f46e5;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Ensure charts are responsive */
+        .chart-container {
+            position: relative;
+            height: 350px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-900">Dynamic Financial Dashboard</h1>
+            <p class="text-lg text-gray-600 mt-2">Your live financial analysis tool, powered by AI.</p>
+        </header>
+
+        <!-- Main Application Section -->
+        <main id="app" class="space-y-8">
+
+            <!-- Control Buttons -->
+            <section id="controls-section" class="flex justify-end gap-4">
+                 <button id="add-data-button" class="bg-indigo-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-indigo-700 transition-colors duration-200">
+                    Add/Update Financials
+                </button>
+                <button id="clear-data-button" class="bg-red-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-red-700 transition-colors duration-200">
+                    Clear All Data
+                </button>
+            </section>
+            
+            <!-- File Upload Section (Initially Hidden) -->
+            <section id="upload-section" class="hidden bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">Upload Latest Financials</h2>
+                <div id="drop-zone" class="drop-zone mt-4 border-4 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer">
+                    <input type="file" id="file-input" multiple class="hidden">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <p class="mt-4 text-lg text-gray-600">
+                        <span class="font-semibold text-indigo-600">Click to upload</span> or drag and drop your PDFs here.
+                    </p>
+                    <p class="text-xs text-gray-500 mt-2">Please upload both the Income Statement and Balance Sheet for analysis.</p>
+                </div>
+                <div id="file-list" class="mt-4 text-sm text-gray-700"></div>
+                <button id="analyze-button" class="mt-6 w-full bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 transition-colors duration-200">
+                    Analyze & Update Dashboard
+                </button>
+            </section>
+
+            <!-- Loading and Status Section -->
+            <section id="status-section" class="hidden text-center p-6 bg-white rounded-2xl shadow-lg border border-gray-200">
+                <div id="loader" class="loader mx-auto"></div>
+                <p id="status-text" class="mt-4 text-lg font-medium text-gray-700">Initializing...</p>
+            </section>
+            
+            <!-- Error Section -->
+            <section id="error-section" class="hidden p-6 bg-red-50 text-red-700 rounded-2xl shadow-lg border border-red-200">
+                 <h2 class="text-2xl font-semibold mb-2 text-red-800">An Error Occurred</h2>
+                 <p id="error-text" class="whitespace-pre-line"></p>
+            </section>
+
+            <!-- Dashboard Display Section -->
+            <section id="dashboard-section" class="hidden space-y-8">
+                <h2 class="text-2xl font-semibold text-gray-800">Dashboard & Analysis</h2>
+                
+                <!-- KPIs -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                        <h3 class="text-base font-medium text-gray-500">YTD Net Profit</h3>
+                        <p id="kpi-ytd-profit" class="text-3xl font-semibold text-gray-900 mt-2">R0.00</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                        <h3 class="text-base font-medium text-gray-500">YTD Total Revenue</h3>
+                        <p id="kpi-ytd-revenue" class="text-3xl font-semibold text-gray-900 mt-2">R0.00</p>
+                    </div>
+                     <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                        <h3 class="text-base font-medium text-gray-500">YTD Profit Margin</h3>
+                        <p id="kpi-ytd-margin" class="text-3xl font-semibold text-gray-900 mt-2">0.00%</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                        <h3 class="text-base font-medium text-gray-500">Current Ratio</h3>
+                        <p id="kpi-current-ratio" class="text-3xl font-semibold text-gray-900 mt-2">0.00</p>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                        <h3 class="text-xl font-semibold mb-4 text-gray-800">Monthly Net Profit Trend</h3>
+                        <div class="chart-container">
+                            <canvas id="netProfitChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                         <h3 class="text-xl font-semibold mb-4 text-gray-800">Monthly Revenue vs. Costs</h3>
+                        <div class="chart-container">
+                            <canvas id="revenueVsCostChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Analysis -->
+                <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                    <h3 class="text-xl font-semibold text-gray-800">Gemini 2.5 Pro Analysis</h3>
+                    <div id="ai-analysis" class="mt-4 prose prose-indigo max-w-none text-gray-700 whitespace-pre-line">
+                        <p>Analysis will appear here...</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+        
+        <footer class="text-center mt-12 py-4 border-t border-gray-300">
+            <p class="text-sm text-gray-500">Powered by Gemini 2.5 Pro & Firebase</p>
+        </footer>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        // Import necessary Firebase functions
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- DOM ELEMENT REFERENCES ---
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const fileList = document.getElementById('file-list');
+        const analyzeButton = document.getElementById('analyze-button');
+        const statusSection = document.getElementById('status-section');
+        const loader = document.getElementById('loader');
+        const statusText = document.getElementById('status-text');
+        const dashboardSection = document.getElementById('dashboard-section');
+        const errorSection = document.getElementById('error-section');
+        const errorText = document.getElementById('error-text');
+        const addDataButton = document.getElementById('add-data-button');
+        const clearDataButton = document.getElementById('clear-data-button');
+        const uploadSection = document.getElementById('upload-section');
+
+        // --- STATE MANAGEMENT ---
+        let uploadedFiles = [];
+        let db, auth, userId;
+        let netProfitChart, revenueVsCostChart;
+        let currentData = null; // Holds the current state of the dashboard data
+        
+        // --- FIREBASE CONFIGURATION ---
+        // Your web app's Firebase configuration provided by the user
+        const firebaseConfig = {
+            apiKey: "AIzaSyBnOemVRN1BeLJsu3Eys8ZQdttyex9h3Gc",
+            authDomain: "dashboard-e830a.firebaseapp.com",
+            projectId: "dashboard-e830a",
+            storageBucket: "dashboard-e830a.appspot.com",
+            messagingSenderId: "637034789575",
+            appId: "1:637034789575:web:09e0041d43ea411c851ce2",
+            measurementId: "G-3QZ1FPH8DF"
+        };
+        const appId = firebaseConfig.appId; // Get the appId directly from the config object
+
+
+        // --- INITIALIZATION ---
+        async function initialize() {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        // This will be triggered after a successful anonymous sign-in
+                        userId = user.uid;
+                        statusText.textContent = 'Authenticated. Checking for saved data...';
+                        setupRealtimeListener(); // No need to await this, it sets up a listener
+                    }
+                });
+
+                // Attempt to sign in
+                statusText.textContent = 'Authenticating...';
+                await signInAnonymously(auth);
+
+            } catch (e) {
+                console.error("Firebase initialization error:", e);
+                if (e.code === "auth/configuration-not-found") {
+                    const errorMessage = `Firebase Authentication Error: Anonymous Sign-In is not enabled for your project. 
+                    
+                    To fix this:
+                    1. Go to your Firebase Console.
+                    2. Navigate to Build -> Authentication.
+                    3. Click the 'Sign-in method' tab.
+                    4. Click on 'Anonymous' and enable it.`;
+                    showError(errorMessage);
+                } else {
+                    showError(`Could not initialize the application: ${e.message}`);
+                }
+            }
+        }
+
+        // --- UI EVENT HANDLERS ---
+        function setupUIHandlers() {
+            // File handling
+            dropZone.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', () => handleFiles(fileInput.files));
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => dropZone.addEventListener(eventName, preventDefaults, false));
+            ['dragenter', 'dragover'].forEach(eventName => dropZone.addEventListener(eventName, () => dropZone.classList.add('drop-zone--over'), false));
+            ['dragleave', 'drop'].forEach(eventName => dropZone.addEventListener(eventName, () => dropZone.classList.remove('drop-zone--over'), false));
+            dropZone.addEventListener('drop', (e) => handleFiles(e.dataTransfer.files), false);
+            
+            // Button clicks
+            analyzeButton.addEventListener('click', processFiles);
+            addDataButton.addEventListener('click', () => {
+                uploadSection.classList.toggle('hidden');
+            });
+            clearDataButton.addEventListener('click', async () => {
+                if (confirm("Are you sure you want to delete all dashboard data? This action cannot be undone.")) {
+                    await clearAllData();
+                }
+            });
+        }
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function handleFiles(files) {
+            uploadedFiles = Array.from(files).filter(file => file.type === 'application/pdf');
+            updateFileList();
+            analyzeButton.disabled = uploadedFiles.length === 0;
+        }
+
+        function updateFileList() {
+            fileList.innerHTML = '';
+            if (uploadedFiles.length > 0) {
+                const list = document.createElement('ul');
+                list.className = 'list-disc pl-5 space-y-1';
+                uploadedFiles.forEach(file => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+                    list.appendChild(listItem);
+                });
+                fileList.appendChild(list);
+            }
+        }
+
+        // --- CORE PROCESSING LOGIC ---
+        async function processFiles() {
+            if (uploadedFiles.length === 0) {
+                showError("Please upload at least one PDF file.");
+                return;
+            }
+            
+            showStatus("Reading and encoding files...");
+            
+            const filePromises = uploadedFiles.map(file => {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const base64Data = reader.result.split(',')[1];
+                        resolve({ inlineData: { mimeType: file.type, data: base64Data } });
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+            });
+
+            try {
+                const fileParts = await Promise.all(filePromises);
+                showStatus("Sending documents to Gemini 2.5 Pro for analysis...");
+                const newAnalysis = await getFinancialAnalysis(fileParts);
+                
+                showStatus("Merging new data with historical records...");
+                const mergedData = mergeFinancialData(currentData, newAnalysis);
+                
+                showStatus("Analysis complete. Saving to database...");
+                await saveData(mergedData);
+                
+                uploadSection.classList.add('hidden'); // Hide upload form after success
+                
+            } catch (e) {
+                console.error("Processing error:", e);
+                showError(`An error occurred during processing: ${e.message}`);
+            }
+        }
+
+        // --- GEMINI API INTERACTION ---
+        async function getFinancialAnalysis(fileParts) {
+            const prompt = `
+                You are an expert financial analyst. Analyze the provided financial documents (Income Statement and Balance Sheet).
+                Extract the key financial data and provide a concise analysis.
+                Your response MUST be a single, valid JSON object. Do not include any text or markdown formatting before or after the JSON object.
+                
+                The JSON object must conform to the following schema:
+                {
+                  "monthlyData": [
+                    { "month": "Month Year", "revenue": 12345.67, "costOfSales": 1234.56, "otherExpenses": 123.45, "netProfit": 123.45 }
+                  ],
+                  "ytdTotals": { "revenue": 123456.78, "netProfit": 12345.67 },
+                  "financialPosition": { "totalAssets": 123456.78, "totalLiabilities": 12345.67, "totalEquity": 12345.67, "currentAssets": 12345.67, "currentLiabilities": 1234.56 },
+                  "aiAnalysis": "A concise, professional summary of the company's performance for the LATEST period provided, highlighting key trends, strengths, weaknesses, and actionable recommendations. Analyze the profit margin and current ratio for the latest period."
+                }
+
+                Extract data for all available months in the documents. Ensure all numerical values are numbers, not strings.
+            `;
+
+            const requestBody = {
+                contents: [{ parts: [{ text: prompt }, ...fileParts] }],
+                generationConfig: { responseMimeType: "application/json" }
+            };
+            
+            // The API key is now inserted here.
+            const apiKey = "AIzaSyC-yMxXO1HXwrRsN4Xz71363ul5HHtgxXA"; 
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody)
+            });
+
+            if (!response.ok) {
+                throw new Error(`API request failed with status ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) {
+                return JSON.parse(result.candidates[0].content.parts[0].text);
+            } else {
+                throw new Error("Invalid response structure from Gemini API.");
+            }
+        }
+        
+        // --- DATA MERGING LOGIC ---
+        function mergeFinancialData(existingData, newData) {
+            if (!existingData || !existingData.monthlyData) {
+                return newData; // If no old data, the new data is the whole dataset
+            }
+            
+            const mergedMonthlyData = new Map(existingData.monthlyData.map(item => [item.month, item]));
+            
+            newData.monthlyData.forEach(item => {
+                mergedMonthlyData.set(item.month, item); // Add or overwrite monthly data
+            });
+
+            // Convert map back to array and sort by date for charting
+            const sortedMonthlyData = Array.from(mergedMonthlyData.values()).sort((a, b) => {
+                return new Date(a.month) - new Date(b.month);
+            });
+
+            return {
+                monthlyData: sortedMonthlyData,
+                // Always use the latest YTD, financial position, and analysis
+                ytdTotals: newData.ytdTotals,
+                financialPosition: newData.financialPosition,
+                aiAnalysis: newData.aiAnalysis
+            };
+        }
+
+        // --- FIRESTORE DATA MANAGEMENT ---
+        async function setupRealtimeListener() {
+            if (!userId) return;
+            const docRef = doc(db, `artifacts/${appId}/users/${userId}/financial_data/latest`);
+            
+            onSnapshot(docRef, (docSnap) => {
+                statusSection.classList.add('hidden');
+                if (docSnap.exists()) {
+                    currentData = docSnap.data().analysis;
+                    renderDashboard(currentData);
+                    dashboardSection.classList.remove('hidden');
+                } else {
+                    currentData = null;
+                    dashboardSection.classList.add('hidden');
+                    uploadSection.classList.remove('hidden'); // Show upload if no data
+                }
+            }, (error) => {
+                console.error("Firestore listener error:", error);
+                showError("Could not listen for data updates.");
+            });
+        }
+
+        async function saveData(analysisData) {
+            if (!userId) throw new Error("User not authenticated. Cannot save data.");
+            const docRef = doc(db, `artifacts/${appId}/users/${userId}/financial_data/latest`);
+            await setDoc(docRef, { analysis: analysisData, lastUpdated: new Date() });
+        }
+
+        async function clearAllData() {
+            if (!userId) throw new Error("User not authenticated. Cannot clear data.");
+            const docRef = doc(db, `artifacts/${appId}/users/${userId}/financial_data/latest`);
+            showStatus("Deleting all data...");
+            await deleteDoc(docRef);
+            // The onSnapshot listener will automatically handle the UI update
+        }
+
+        // --- DASHBOARD RENDERING ---
+        function renderDashboard(data) {
+            errorSection.classList.add('hidden');
+            
+            const ytdMargin = (data.ytdTotals.revenue > 0) ? (data.ytdTotals.netProfit / data.ytdTotals.revenue) * 100 : 0;
+            const currentRatio = (data.financialPosition.currentLiabilities > 0) ? (data.financialPosition.currentAssets / data.financialPosition.currentLiabilities) : 0;
+
+            document.getElementById('kpi-ytd-profit').textContent = `R${data.ytdTotals.netProfit.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            document.getElementById('kpi-ytd-revenue').textContent = `R${data.ytdTotals.revenue.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            document.getElementById('kpi-ytd-margin').textContent = `${ytdMargin.toFixed(2)}%`;
+            document.getElementById('kpi-current-ratio').textContent = currentRatio.toFixed(2);
+            document.getElementById('ai-analysis').textContent = data.aiAnalysis;
+
+            const labels = data.monthlyData.map(d => d.month);
+            
+            const netProfitData = {
+                labels: labels,
+                datasets: [{
+                    label: 'Net Profit',
+                    data: data.monthlyData.map(d => d.netProfit),
+                    borderColor: '#4f46e5',
+                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                    fill: true,
+                    tension: 0.3
+                }]
+            };
+            if (netProfitChart) netProfitChart.destroy();
+            netProfitChart = new Chart(document.getElementById('netProfitChart'), { type: 'line', data: netProfitData, options: getChartOptions(true) });
+
+            const revenueVsCostData = {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Total Revenue',
+                        data: data.monthlyData.map(d => d.revenue),
+                        backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                    },
+                    {
+                        label: 'Total Costs',
+                        data: data.monthlyData.map(d => d.costOfSales + d.otherExpenses),
+                        backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                    }
+                ]
+            };
+            if (revenueVsCostChart) revenueVsCostChart.destroy();
+            revenueVsCostChart = new Chart(document.getElementById('revenueVsCostChart'), { type: 'bar', data: revenueVsCostData, options: getChartOptions(true) });
+        }
+        
+        function getChartOptions(isCurrency = false) {
+            return {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) { label += ': '; }
+                                if (context.parsed.y !== null) {
+                                    label += isCurrency ? `R${context.parsed.y.toLocaleString('en-ZA')}` : context.parsed.y;
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                if (!isCurrency) return value;
+                                if (value >= 1000000) return `R${value / 1000000}M`;
+                                if (value >= 1000) return `R${value / 1000}K`;
+                                return `R${value}`;
+                            }
+                        }
+                    }
+                }
+            };
+        }
+
+        // --- UTILITY FUNCTIONS ---
+        function showStatus(message) {
+            statusSection.classList.remove('hidden');
+            dashboardSection.classList.add('hidden');
+            errorSection.classList.add('hidden');
+            loader.classList.remove('hidden');
+            statusText.textContent = message;
+        }
+
+        function showError(message) {
+            statusSection.classList.add('hidden');
+            errorSection.classList.remove('hidden');
+            errorText.textContent = message;
+        }
+
+        // --- START THE APP ---
+        setupUIHandlers();
+        initialize();
+
+    </script>
+</body>
+</html>
