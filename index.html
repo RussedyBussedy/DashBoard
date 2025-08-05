@@ -636,13 +636,22 @@
             if (currentData) renderDashboard(currentData);
         }
 
+        function getFinancialYearStartYear(date = new Date()) {
+            const month = date.getMonth();
+            const year = date.getFullYear();
+            return month < 2 ? year - 1 : year; // Financial year starts in March (month 2)
+        }
+
         function getFinancialYearData(allData) {
-            const now = new Date();
-            let currentYear = now.getFullYear();
-            const marchFirst = new Date(currentYear, 2, 1);
-            let startYear = now < marchFirst ? currentYear - 1 : currentYear;
-            const fyStartDate = new Date(startYear, 2, 1);
-            return allData.filter(d => new Date(d.month) >= fyStartDate);
+            if (!allData || allData.length === 0) return [];
+            
+            const currentFYStartYear = getFinancialYearStartYear();
+            const fyStartDate = new Date(currentFYStartYear, 2, 1);
+
+            return allData.filter(d => {
+                const itemDate = new Date(d.month);
+                return !isNaN(itemDate) && itemDate >= fyStartDate;
+            });
         }
 
         function renderDashboard(fullData) {
@@ -651,7 +660,10 @@
 
             const isYtdView = currentViewMode === 'ytd';
             const dataForView = isYtdView ? getFinancialYearData(fullData.monthlyData) : fullData.monthlyData;
-            const startYear = new Date(getFinancialYearData(fullData.monthlyData)[0]?.month || Date.now()).getFullYear();
+            
+            const ytdDataForTitle = getFinancialYearData(fullData.monthlyData);
+            const startYear = ytdDataForTitle.length > 0 ? new Date(ytdDataForTitle[0].month).getFullYear() : getFinancialYearStartYear();
+            
             dashboardTitle.textContent = `Dashboard & Analysis (${isYtdView ? `FY ${startYear + 1} YTD` : 'All Time'})`;
 
             const ytdMargin = (fullData.ytdTotals.revenue > 0) ? (fullData.ytdTotals.netProfit / fullData.ytdTotals.revenue) * 100 : 0;
