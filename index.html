@@ -567,7 +567,7 @@
             
             const mergedMonthlyData = new Map(existingData.monthlyData.map(item => [item.month, item]));
             newData.monthlyData.forEach(item => mergedMonthlyData.set(item.month, item));
-            const sortedMonthlyData = Array.from(mergedMonthlyData.values()).sort((a, b) => new Date(a.month) - new Date(b.month));
+            const sortedMonthlyData = Array.from(mergedMonthlyData.values()).sort((a, b) => parseMonthYear(a.month) - parseMonthYear(b.month));
 
             return {
                 monthlyData: sortedMonthlyData,
@@ -636,8 +636,21 @@
             if (currentData) renderDashboard(currentData);
         }
 
+        // --- DATE & FINANCIAL YEAR LOGIC ---
+        function parseMonthYear(monthYearStr) {
+            if (!monthYearStr) return null;
+            const parts = monthYearStr.split(' ');
+            if (parts.length !== 2) return null;
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            const monthIndex = monthNames.findIndex(m => m.toLowerCase().startsWith(parts[0].toLowerCase()));
+            if (monthIndex === -1) return null;
+            const year = parseInt(parts[1], 10);
+            if (isNaN(year)) return null;
+            return new Date(Date.UTC(year, monthIndex, 1));
+        }
+
         function getFinancialYearStartYear(date = new Date()) {
-            const month = date.getMonth();
+            const month = date.getMonth(); // 0-11
             const year = date.getFullYear();
             return month < 2 ? year - 1 : year; // Financial year starts in March (month 2)
         }
@@ -646,11 +659,11 @@
             if (!allData || allData.length === 0) return [];
             
             const currentFYStartYear = getFinancialYearStartYear();
-            const fyStartDate = new Date(currentFYStartYear, 2, 1);
+            const fyStartDate = new Date(Date.UTC(currentFYStartYear, 2, 1));
 
             return allData.filter(d => {
-                const itemDate = new Date(d.month);
-                return !isNaN(itemDate) && itemDate >= fyStartDate;
+                const itemDate = parseMonthYear(d.month);
+                return itemDate && !isNaN(itemDate) && itemDate >= fyStartDate;
             });
         }
 
@@ -662,7 +675,7 @@
             const dataForView = isYtdView ? getFinancialYearData(fullData.monthlyData) : fullData.monthlyData;
             
             const ytdDataForTitle = getFinancialYearData(fullData.monthlyData);
-            const startYear = ytdDataForTitle.length > 0 ? new Date(ytdDataForTitle[0].month).getFullYear() : getFinancialYearStartYear();
+            const startYear = ytdDataForTitle.length > 0 ? parseMonthYear(ytdDataForTitle[0].month).getUTCFullYear() : getFinancialYearStartYear();
             
             dashboardTitle.textContent = `Dashboard & Analysis (${isYtdView ? `FY ${startYear + 1} YTD` : 'All Time'})`;
 
