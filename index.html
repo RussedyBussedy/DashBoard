@@ -75,6 +75,11 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
+        .kpi-progress-indicator::before {
+            content: ''; position: absolute; top: -4px; bottom: -4px; width: 3px; 
+            background-color: #4b5563; border-radius: 1.5px; z-index: 5; 
+        }
+
         /* Chatbot Styles */
         #chatbot-container {
             position: fixed;
@@ -242,21 +247,45 @@
                 </section>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-base font-medium text-gray-500">Progress to Annual Target</h3>
+                            <p id="kpi-ytd-profit" class="text-3xl font-semibold text-gray-900 mt-2">R0.00</p>
+                        </div>
+                        <div class="mt-4">
+                            <div class="flex justify-between text-sm text-gray-600 mb-1"><span>Progress</span><span id="progress-percentage" class="font-semibold text-indigo-600">0%</span></div>
+                            <div class="w-full bg-gray-200 rounded-full h-3 relative"><div id="progress-bar" class="bg-indigo-600 h-3 rounded-full" style="width: 0%"></div></div>
+                            <p class="text-xs text-right text-gray-500 mt-1">Target: <span id="kpi-target-profit">R0.00</span></p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200 flex flex-col justify-between">
+                        <div>
+                             <h3 id="kpi-margin-title" class="text-base font-medium text-gray-500">YTD Profit Margin</h3>
+                            <p id="kpi-ytd-margin" class="text-3xl font-semibold text-gray-900 mt-2">0.00%</p>
+                        </div>
+                         <div class="mt-4">
+                            <div class="flex justify-between text-sm text-gray-600 mb-1"><span>Performance</span><span id="margin-indicator" class="font-semibold"></span></div>
+                             <div class="w-full bg-gray-200 rounded-full h-3 relative"><div id="margin-bar" class="h-3 rounded-full" style="width: 0%"></div><div id="margin-target-line" class="kpi-progress-indicator" style="left: 0%;"></div></div>
+                            <p class="text-xs text-right text-gray-500 mt-1">Target: <span id="kpi-margin-target">0.00%</span> (vertical line)</p>
+                        </div>
+                    </div>
+                     <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200 flex flex-col justify-between">
+                        <div>
+                            <h3 id="kpi-material-cost-title" class="text-base font-medium text-gray-500">YTD Material Costs %</h3>
+                            <p id="kpi-material-cost-percentage" class="text-3xl font-semibold text-gray-900 mt-2">0.00%</p>
+                        </div>
+                        <div class="mt-4">
+                            <div class="flex justify-between text-sm text-gray-600 mb-1"><span>Performance</span><span id="material-cost-indicator" class="font-semibold"></span></div>
+                             <div class="w-full bg-gray-200 rounded-full h-3 relative"><div id="material-cost-bar" class="h-3 rounded-full" style="width: 0%"></div><div id="material-cost-target-line" class="kpi-progress-indicator" style="left: 0%;"></div></div>
+                            <p class="text-xs text-right text-gray-500 mt-1">Target: <span id="kpi-material-cost-target">0.00%</span> (vertical line)</p>
+                        </div>
+                    </div>
                     <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
                         <h3 class="text-base font-medium text-gray-500">Projected Annual Profit</h3>
                         <p id="kpi-projected-profit" class="text-3xl font-semibold text-gray-900 mt-2">R0.00</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
-                        <h3 class="text-base font-medium text-gray-500">YTD Net Profit</h3>
-                        <p id="kpi-ytd-profit" class="text-3xl font-semibold text-gray-900 mt-2">R0.00</p>
-                    </div>
-                     <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
-                        <h3 class="text-base font-medium text-gray-500">YTD Profit Margin</h3>
-                        <p id="kpi-ytd-margin" class="text-3xl font-semibold text-gray-900 mt-2">0.00%</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                        <hr class="my-4 border-gray-200">
                         <h3 class="text-base font-medium text-gray-500">Current Ratio</h3>
-                        <p id="kpi-current-ratio" class="text-3xl font-semibold text-gray-900 mt-2">0.00</p>
+                        <p id="kpi-current-ratio" class="text-3xl font-semibold text-gray-900 mt-1">0.00</p>
                     </div>
                 </div>
 
@@ -650,8 +679,8 @@
         }
 
         function getFinancialYearStartYear(date = new Date()) {
-            const month = date.getMonth(); // 0-11
-            const year = date.getFullYear();
+            const month = date.getUTCMonth(); // 0-11
+            const year = date.getUTCFullYear();
             return month < 2 ? year - 1 : year; // Financial year starts in March (month 2)
         }
 
@@ -679,15 +708,23 @@
             
             dashboardTitle.textContent = `Dashboard & Analysis (${isYtdView ? `FY ${startYear + 1} YTD` : 'All Time'})`;
 
-            const ytdMargin = (fullData.ytdTotals.revenue > 0) ? (fullData.ytdTotals.netProfit / fullData.ytdTotals.revenue) * 100 : 0;
-            const currentRatio = (fullData.financialPosition.currentLiabilities > 0) ? (fullData.financialPosition.currentAssets / fullData.financialPosition.currentLiabilities) : 0;
+            // Calculate totals for the current view
+            const totalRevenueForView = dataForView.reduce((sum, item) => sum + item.revenue, 0);
+            const totalProfitForView = dataForView.reduce((sum, item) => sum + item.netProfit, 0);
+            const totalCOGSForView = dataForView.reduce((sum, item) => sum + item.costOfGoodsSold, 0);
+            
+            const marginForView = (totalRevenueForView > 0) ? (totalProfitForView / totalRevenueForView) * 100 : 0;
+            const materialCostPercForView = (totalRevenueForView > 0) ? (totalCOGSForView / totalRevenueForView) * 100 : 0;
+
+            // Update KPIs
             document.getElementById('kpi-projected-profit').textContent = `R${calculateProjectedProfit().toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-            document.getElementById('kpi-ytd-profit').textContent = `R${fullData.ytdTotals.netProfit.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-            document.getElementById('kpi-ytd-margin').textContent = `${ytdMargin.toFixed(2)}%`;
-            document.getElementById('kpi-current-ratio').textContent = currentRatio.toFixed(2);
+            document.getElementById('kpi-ytd-profit').textContent = `R${totalProfitForView.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            document.getElementById('kpi-ytd-margin').textContent = `${marginForView.toFixed(2)}%`;
+            document.getElementById('kpi-current-ratio').textContent = (fullData.financialPosition.currentLiabilities > 0) ? (fullData.financialPosition.currentAssets / fullData.financialPosition.currentLiabilities).toFixed(2) : '0.00';
             document.getElementById('ai-analysis').textContent = fullData.aiAnalysis;
             
             renderHealthDashboard(fullData);
+            renderKpiProgressBars(fullData, totalProfitForView, marginForView, materialCostPercForView);
 
             const labels = dataForView.map(d => d.month);
             
@@ -735,6 +772,44 @@
             document.getElementById('ytd-margin-status').className = `font-medium ${ytdMarginStatus.textColorClass}`;
             document.getElementById('ytd-material-cost-status').textContent = ytdMaterialStatus.text;
             document.getElementById('ytd-material-cost-status').className = `font-medium ${ytdMaterialStatus.textColorClass}`;
+        }
+        
+        function renderKpiProgressBars(fullData, ytdProfit, ytdMargin, ytdMaterialCostPerc) {
+            // Annual Target Progress
+            const progressPercentage = (ytdProfit / targets.annualProfit) * 100;
+            document.getElementById('progress-percentage').textContent = `${progressPercentage.toFixed(1)}%`;
+            document.getElementById('progress-bar').style.width = `${Math.min(progressPercentage, 100)}%`;
+            document.getElementById('kpi-target-profit').textContent = `R${targets.annualProfit.toLocaleString('en-ZA')}`;
+
+            // Profit Margin Bar
+            const marginIndicatorEl = document.getElementById('margin-indicator');
+            const marginBarEl = document.getElementById('margin-bar');
+            if (ytdMargin >= targets.profitMargin) {
+                marginIndicatorEl.textContent = 'Above Target'; marginIndicatorEl.className = 'font-semibold text-teal-600';
+                marginBarEl.className = 'h-3 rounded-full bg-teal-500';
+            } else {
+                marginIndicatorEl.textContent = 'Below Target'; marginIndicatorEl.className = 'font-semibold text-red-600';
+                marginBarEl.className = 'h-3 rounded-full bg-red-500';
+            }
+            const marginScaleMaxVisual = Math.max(ytdMargin, targets.profitMargin, 15) * 1.2; 
+            marginBarEl.style.width = `${(ytdMargin / marginScaleMaxVisual) * 100}%`;
+            document.getElementById('margin-target-line').style.left = `${(targets.profitMargin / marginScaleMaxVisual) * 100}%`;
+            document.getElementById('kpi-margin-target').textContent = `${targets.profitMargin.toFixed(2)}%`;
+
+            // Material Cost Bar
+            const materialCostIndicatorEl = document.getElementById('material-cost-indicator');
+            const materialCostBarEl = document.getElementById('material-cost-bar');
+            if (ytdMaterialCostPerc <= targets.materialCostPercentage) { 
+                materialCostIndicatorEl.textContent = 'Below Target'; materialCostIndicatorEl.className = 'font-semibold text-green-600';
+                materialCostBarEl.className = 'h-3 rounded-full bg-green-500';
+            } else { 
+                materialCostIndicatorEl.textContent = 'Above Target'; materialCostIndicatorEl.className = 'font-semibold text-red-600';
+                materialCostBarEl.className = 'h-3 rounded-full bg-red-500';
+            }
+            const materialCostScaleMaxVisual = Math.max(ytdMaterialCostPerc, targets.materialCostPercentage) * 1.2;
+            materialCostBarEl.style.width = `${(ytdMaterialCostPerc / materialCostScaleMaxVisual) * 100}%`;
+            document.getElementById('material-cost-target-line').style.left = `${(targets.materialCostPercentage / materialCostScaleMaxVisual) * 100}%`;
+            document.getElementById('kpi-material-cost-target').textContent = `${targets.materialCostPercentage.toFixed(2)}%`;
         }
 
         function renderDetailedCharts(data) {
