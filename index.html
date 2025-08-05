@@ -20,9 +20,8 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6; /* A slightly darker gray for better contrast */
+            background-color: #f3f4f6;
         }
-        /* Custom styles for the file drop zone */
         .drop-zone {
             transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
         }
@@ -30,7 +29,6 @@
             background-color: #e0e7ff;
             border-color: #4f46e5;
         }
-        /* Custom styles for the loader animation */
         .loader {
             border: 5px solid #f3f3f3;
             border-top: 5px solid #4f46e5;
@@ -43,11 +41,122 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        /* Ensure charts are responsive */
         .chart-container {
             position: relative;
             height: 350px;
             width: 100%;
+        }
+        .detailed-chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 800px;
+        }
+         .product-range-chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 1200px;
+        }
+        .tab-btn {
+            transition: all 0.3s ease-in-out;
+            border-bottom-width: 2px;
+            border-color: transparent;
+        }
+        .tab-btn.active {
+            border-color: #4f46e5; 
+            color: #4f46e5; 
+            font-weight: 600;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Chatbot Styles */
+        #chatbot-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        #chatbot-toggle {
+            background-color: #4f46e5;
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: transform 0.2s;
+        }
+        #chatbot-toggle:hover {
+            transform: scale(1.1);
+        }
+        #chatbot-window {
+            position: absolute;
+            bottom: 80px;
+            right: 0;
+            width: 350px;
+            height: 450px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transform-origin: bottom right;
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+        }
+        #chat-messages {
+            flex-grow: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .chat-message {
+            padding: 8px 12px;
+            border-radius: 18px;
+            max-width: 80%;
+        }
+        .user-message {
+            background-color: #4f46e5;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+        .bot-message {
+            background-color: #eef2ff;
+            color: #374151;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+        #chat-input-container {
+            border-top: 1px solid #e5e7eb;
+            padding: 10px;
+            display: flex;
+        }
+        #chat-input {
+            flex-grow: 1;
+            border: 1px solid #d1d5db;
+            border-radius: 20px;
+            padding: 8px 15px;
+            outline: none;
+        }
+        #chat-send {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0 10px;
+            color: #4f46e5;
         }
     </style>
 </head>
@@ -60,20 +169,18 @@
             <p class="text-lg text-gray-600 mt-2">Your live financial analysis tool, powered by AI.</p>
         </header>
 
-        <!-- Main Application Section -->
         <main id="app" class="space-y-8">
 
-            <!-- Control Buttons -->
-            <section id="controls-section" class="flex justify-end gap-4">
-                 <button id="add-data-button" class="bg-indigo-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-indigo-700 transition-colors duration-200">
+            <section id="controls-section" class="flex justify-between items-center">
+                <div class="flex items-center space-x-2 bg-white p-1 rounded-lg shadow">
+                    <button id="view-ytd-btn" class="px-4 py-2 text-sm font-semibold rounded-md transition-colors">YTD</button>
+                    <button id="view-all-btn" class="px-4 py-2 text-sm font-semibold rounded-md transition-colors">All Time</button>
+                </div>
+                <button id="add-data-button" class="bg-indigo-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-indigo-700 transition-colors duration-200">
                     Add/Update Financials
-                </button>
-                <button id="clear-data-button" class="bg-red-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-red-700 transition-colors duration-200">
-                    Clear All Data
                 </button>
             </section>
             
-            <!-- File Upload Section (Initially Hidden) -->
             <section id="upload-section" class="hidden bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
                 <h2 class="text-2xl font-semibold mb-4 text-gray-800">Upload Latest Financials</h2>
                 <div id="drop-zone" class="drop-zone mt-4 border-4 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer">
@@ -84,7 +191,7 @@
                     <p class="mt-4 text-lg text-gray-600">
                         <span class="font-semibold text-indigo-600">Click to upload</span> or drag and drop your PDFs here.
                     </p>
-                    <p class="text-xs text-gray-500 mt-2">Please upload both the Income Statement and Balance Sheet for analysis.</p>
+                    <p class="text-xs text-gray-500 mt-2">Upload Income Statement, Balance Sheet, and/or Shipments by Product reports.</p>
                 </div>
                 <div id="file-list" class="mt-4 text-sm text-gray-700"></div>
                 <button id="analyze-button" class="mt-6 w-full bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 transition-colors duration-200">
@@ -92,31 +199,56 @@
                 </button>
             </section>
 
-            <!-- Loading and Status Section -->
             <section id="status-section" class="hidden text-center p-6 bg-white rounded-2xl shadow-lg border border-gray-200">
                 <div id="loader" class="loader mx-auto"></div>
                 <p id="status-text" class="mt-4 text-lg font-medium text-gray-700">Initializing...</p>
             </section>
             
-            <!-- Error Section -->
             <section id="error-section" class="hidden p-6 bg-red-50 text-red-700 rounded-2xl shadow-lg border border-red-200">
                  <h2 class="text-2xl font-semibold mb-2 text-red-800">An Error Occurred</h2>
                  <p id="error-text" class="whitespace-pre-line"></p>
             </section>
 
-            <!-- Dashboard Display Section -->
             <section id="dashboard-section" class="hidden space-y-8">
-                <h2 class="text-2xl font-semibold text-gray-800">Dashboard & Analysis</h2>
+                <h2 id="dashboard-title" class="text-2xl font-semibold text-gray-800">Dashboard & Analysis</h2>
+
+                <section id="general-health-indicators">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Overall Health Status</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div id="current-month-health-card" class="bg-white p-6 rounded-xl shadow-lg border">
+                            <h4 class="text-lg font-semibold text-gray-700 mb-3">Latest Month Health (<span id="latest-month-label"></span>)</h4>
+                            <div class="flex items-center mb-3">
+                                <span id="current-month-health-indicator" class="w-8 h-8 rounded-full mr-4"></span>
+                                <p id="current-month-health-text" class="text-xl text-gray-800 font-semibold"></p>
+                            </div>
+                            <div class="text-xs space-y-1">
+                                <p class="text-gray-600">Profit vs Avg. Monthly Target: <span id="current-month-profit-status" class="font-medium"></span></p>
+                                <p class="text-gray-600">Profit Margin vs Target: <span id="current-month-margin-status" class="font-medium"></span></p>
+                                <p class="text-gray-600">Material Costs % of Sales vs Target: <span id="current-month-material-cost-status" class="font-medium"></span></p>
+                            </div>
+                        </div>
+                        <div id="ytd-health-card" class="bg-white p-6 rounded-xl shadow-lg border">
+                            <h4 class="text-lg font-semibold text-gray-700 mb-3">Financial YTD Health</h4>
+                            <div class="flex items-center mb-3">
+                                <span id="ytd-health-indicator" class="w-8 h-8 rounded-full mr-4"></span>
+                                <p id="ytd-health-text" class="text-xl text-gray-800 font-semibold"></p>
+                            </div>
+                             <div class="text-xs space-y-1">
+                                <p class="text-gray-600">YTD Profit Margin: <span id="ytd-margin-status" class="font-medium"></span></p>
+                                <p class="text-gray-600">YTD Material Costs % of Sales: <span id="ytd-material-cost-status" class="font-medium"></span></p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
                 
-                <!-- KPIs -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                        <h3 class="text-base font-medium text-gray-500">Projected Annual Profit</h3>
+                        <p id="kpi-projected-profit" class="text-3xl font-semibold text-gray-900 mt-2">R0.00</p>
+                    </div>
                     <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
                         <h3 class="text-base font-medium text-gray-500">YTD Net Profit</h3>
                         <p id="kpi-ytd-profit" class="text-3xl font-semibold text-gray-900 mt-2">R0.00</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
-                        <h3 class="text-base font-medium text-gray-500">YTD Total Revenue</h3>
-                        <p id="kpi-ytd-revenue" class="text-3xl font-semibold text-gray-900 mt-2">R0.00</p>
                     </div>
                      <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
                         <h3 class="text-base font-medium text-gray-500">YTD Profit Margin</h3>
@@ -128,7 +260,6 @@
                     </div>
                 </div>
 
-                <!-- Charts -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
                         <h3 class="text-xl font-semibold mb-4 text-gray-800">Monthly Net Profit Trend</h3>
@@ -144,7 +275,39 @@
                     </div>
                 </div>
 
-                <!-- AI Analysis -->
+                <section id="analysis-section" class="bg-white p-4 sm:p-6 rounded-xl shadow-lg border border-gray-200">
+                    <div class="border-b border-gray-300">
+                        <nav id="tabs" class="-mb-px flex space-x-1 sm:space-x-4 overflow-x-auto pb-px" aria-label="Tabs">
+                            <button data-target="product_performance" class="tab-btn whitespace-nowrap py-3 px-2 sm:px-4 font-medium text-sm text-gray-500 hover:text-indigo-600 active">Product Performance</button>
+                            <button data-target="cost_structure" class="tab-btn whitespace-nowrap py-3 px-2 sm:px-4 font-medium text-sm text-gray-500 hover:text-indigo-600">Overall Costs</button>
+                            <button data-target="detailed_cos" class="tab-btn whitespace-nowrap py-3 px-2 sm:px-4 font-medium text-sm text-gray-500 hover:text-indigo-600">Cost of Sales Details</button>
+                            <button data-target="detailed_opex" class="tab-btn whitespace-nowrap py-3 px-2 sm:px-4 font-medium text-sm text-gray-500 hover:text-indigo-600">Other Expenses Details</button>
+                        </nav>
+                    </div>
+                    <div class="pt-6">
+                        <div id="content-product_performance" class="tab-content active">
+                            <h3 class="text-xl font-semibold mb-1 text-gray-800">Product Performance (Cost % of Sales)</h3>
+                            <p class="text-gray-600 mb-6 text-sm">Cost of Sales as a percentage of Total Sales for each product range. Target is 53% (lower is better).</p>
+                             <div class="product-range-chart-container"><canvas id="productRangeChart"></canvas></div>
+                        </div>
+                        <div id="content-cost_structure" class="tab-content">
+                            <h3 class="text-xl font-semibold mb-1 text-gray-800">YTD Overall Cost Structure</h3>
+                            <p class="text-gray-600 mb-6 text-sm">High-level breakdown of Year-to-Date total costs.</p>
+                             <div class="chart-container" style="max-width: 450px; height: 350px; margin: auto;"><canvas id="overallCostStructureChart"></canvas></div>
+                        </div>
+                        <div id="content-detailed_cos" class="tab-content">
+                            <h3 class="text-xl font-semibold mb-1 text-gray-800">YTD Detailed Cost of Sales Breakdown</h3>
+                            <p class="text-gray-600 mb-6 text-sm">Granular view of the "Cost of Sales" category.</p>
+                             <div class="detailed-chart-container"><canvas id="detailedCostOfSalesChart"></canvas></div>
+                        </div>
+                        <div id="content-detailed_opex" class="tab-content">
+                            <h3 class="text-xl font-semibold mb-1 text-gray-800">YTD Detailed Other Expenses Breakdown</h3>
+                            <p class="text-gray-600 mb-6 text-sm">Granular view of the "Other Expenses" category.</p>
+                             <div class="detailed-chart-container"><canvas id="detailedOtherExpensesChart"></canvas></div>
+                        </div>
+                    </div>
+                </section>
+
                 <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
                     <h3 class="text-xl font-semibold text-gray-800">Gemini 2.5 Pro Analysis</h3>
                     <div id="ai-analysis" class="mt-4 prose prose-indigo max-w-none text-gray-700 whitespace-pre-line">
@@ -157,14 +320,31 @@
         <footer class="text-center mt-12 py-4 border-t border-gray-300">
             <p class="text-sm text-gray-500">Powered by Gemini 2.5 Pro & Firebase</p>
         </footer>
+
+        <!-- Chatbot UI -->
+        <div id="chatbot-container">
+            <div id="chatbot-window" class="hidden scale-0 opacity-0">
+                <div class="p-4 bg-indigo-600 text-white font-semibold">Financial Assistant</div>
+                <div id="chat-messages">
+                    <div class="chat-message bot-message">Hello! How can I help you analyze the financial data?</div>
+                </div>
+                <div id="chat-input-container">
+                    <input type="text" id="chat-input" placeholder="Ask a question...">
+                    <button id="chat-send">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+                    </button>
+                </div>
+            </div>
+            <button id="chatbot-toggle">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+            </button>
+        </div>
     </div>
 
-    <!-- Firebase SDKs -->
     <script type="module">
-        // Import necessary Firebase functions
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- DOM ELEMENT REFERENCES ---
         const dropZone = document.getElementById('drop-zone');
@@ -178,17 +358,38 @@
         const errorSection = document.getElementById('error-section');
         const errorText = document.getElementById('error-text');
         const addDataButton = document.getElementById('add-data-button');
-        const clearDataButton = document.getElementById('clear-data-button');
         const uploadSection = document.getElementById('upload-section');
+        const tabsContainer = document.getElementById('tabs');
+        const viewYtdBtn = document.getElementById('view-ytd-btn');
+        const viewAllBtn = document.getElementById('view-all-btn');
+        const dashboardTitle = document.getElementById('dashboard-title');
+        const chatbotToggle = document.getElementById('chatbot-toggle');
+        const chatbotWindow = document.getElementById('chatbot-window');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const chatSend = document.getElementById('chat-send');
 
         // --- STATE MANAGEMENT ---
         let uploadedFiles = [];
         let db, auth, userId;
-        let netProfitChart, revenueVsCostChart;
-        let currentData = null; // Holds the current state of the dashboard data
+        let chartInstances = {};
+        let currentData = null;
+        let currentViewMode = 'ytd';
+        
+        // --- FINANCIAL TARGETS & HISTORICAL DATA ---
+        const targets = { 
+            annualProfit: 25475359.75, 
+            profitMargin: 10.11,
+            materialCostPercentage: 53.00
+        };
+        const historicalAnnualData = {
+            fy2022: { netProfit: 14318675.49 },
+            fy2023: { netProfit: 8624848.47 },
+            fy2024: { netProfit: 11013788.22 },
+            fy2025: { netProfit: 13793668.42 },
+        };
         
         // --- FIREBASE CONFIGURATION ---
-        // Your web app's Firebase configuration provided by the user
         const firebaseConfig = {
             apiKey: "AIzaSyBnOemVRN1BeLJsu3Eys8ZQdttyex9h3Gc",
             authDomain: "dashboard-e830a.firebaseapp.com",
@@ -198,8 +399,7 @@
             appId: "1:637034789575:web:09e0041d43ea411c851ce2",
             measurementId: "G-3QZ1FPH8DF"
         };
-        const appId = firebaseConfig.appId; // Get the appId directly from the config object
-
+        const appId = firebaseConfig.appId;
 
         // --- INITIALIZATION ---
         async function initialize() {
@@ -207,30 +407,20 @@
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
-
                 onAuthStateChanged(auth, (user) => {
                     if (user) {
-                        // This will be triggered after a successful anonymous sign-in
                         userId = user.uid;
                         statusText.textContent = 'Authenticated. Checking for saved data...';
-                        setupRealtimeListener(); // No need to await this, it sets up a listener
+                        setupRealtimeListener();
                     }
                 });
-
-                // Attempt to sign in
                 statusText.textContent = 'Authenticating...';
                 await signInAnonymously(auth);
-
             } catch (e) {
                 console.error("Firebase initialization error:", e);
                 if (e.code === "auth/configuration-not-found") {
                     const errorMessage = `Firebase Authentication Error: Anonymous Sign-In is not enabled for your project. 
-                    
-                    To fix this:
-                    1. Go to your Firebase Console.
-                    2. Navigate to Build -> Authentication.
-                    3. Click the 'Sign-in method' tab.
-                    4. Click on 'Anonymous' and enable it.`;
+                    \nTo fix this:\n1. Go to your Firebase Console.\n2. Navigate to Build -> Authentication.\n3. Click the 'Sign-in method' tab.\n4. Click on 'Anonymous' and enable it.`;
                     showError(errorMessage);
                 } else {
                     showError(`Could not initialize the application: ${e.message}`);
@@ -240,30 +430,41 @@
 
         // --- UI EVENT HANDLERS ---
         function setupUIHandlers() {
-            // File handling
             dropZone.addEventListener('click', () => fileInput.click());
             fileInput.addEventListener('change', () => handleFiles(fileInput.files));
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => dropZone.addEventListener(eventName, preventDefaults, false));
-            ['dragenter', 'dragover'].forEach(eventName => dropZone.addEventListener(eventName, () => dropZone.classList.add('drop-zone--over'), false));
-            ['dragleave', 'drop'].forEach(eventName => dropZone.addEventListener(eventName, () => dropZone.classList.remove('drop-zone--over'), false));
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(e => dropZone.addEventListener(e, preventDefaults, false));
+            ['dragenter', 'dragover'].forEach(e => dropZone.addEventListener(e, () => dropZone.classList.add('drop-zone--over'), false));
+            ['dragleave', 'drop'].forEach(e => dropZone.addEventListener(e, () => dropZone.classList.remove('drop-zone--over'), false));
             dropZone.addEventListener('drop', (e) => handleFiles(e.dataTransfer.files), false);
             
-            // Button clicks
             analyzeButton.addEventListener('click', processFiles);
-            addDataButton.addEventListener('click', () => {
-                uploadSection.classList.toggle('hidden');
-            });
-            clearDataButton.addEventListener('click', async () => {
-                if (confirm("Are you sure you want to delete all dashboard data? This action cannot be undone.")) {
-                    await clearAllData();
+            addDataButton.addEventListener('click', () => uploadSection.classList.toggle('hidden'));
+            
+            tabsContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('tab-btn')) {
+                    tabsContainer.querySelectorAll('.tab-btn').forEach(tab => tab.classList.remove('active'));
+                    e.target.classList.add('active');
+                    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                    document.getElementById(`content-${e.target.dataset.target}`).classList.add('active');
                 }
+            });
+
+            viewYtdBtn.addEventListener('click', () => setViewMode('ytd'));
+            viewAllBtn.addEventListener('click', () => setViewMode('all'));
+            chatbotToggle.addEventListener('click', () => {
+                chatbotWindow.classList.toggle('hidden');
+                setTimeout(() => {
+                    chatbotWindow.classList.toggle('scale-0');
+                    chatbotWindow.classList.toggle('opacity-0');
+                }, 10);
+            });
+            chatSend.addEventListener('click', handleChatSubmit);
+            chatInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleChatSubmit();
             });
         }
 
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
+        function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
 
         function handleFiles(files) {
             uploadedFiles = Array.from(files).filter(file => file.type === 'application/pdf');
@@ -287,24 +488,16 @@
 
         // --- CORE PROCESSING LOGIC ---
         async function processFiles() {
-            if (uploadedFiles.length === 0) {
-                showError("Please upload at least one PDF file.");
-                return;
-            }
+            if (uploadedFiles.length === 0) return showError("Please upload at least one PDF file.");
             
             showStatus("Reading and encoding files...");
             
-            const filePromises = uploadedFiles.map(file => {
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                        const base64Data = reader.result.split(',')[1];
-                        resolve({ inlineData: { mimeType: file.type, data: base64Data } });
-                    };
-                    reader.onerror = reject;
-                    reader.readAsDataURL(file);
-                });
-            });
+            const filePromises = uploadedFiles.map(file => new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve({ inlineData: { mimeType: file.type, data: reader.result.split(',')[1] } });
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            }));
 
             try {
                 const fileParts = await Promise.all(filePromises);
@@ -317,7 +510,7 @@
                 showStatus("Analysis complete. Saving to database...");
                 await saveData(mergedData);
                 
-                uploadSection.classList.add('hidden'); // Hide upload form after success
+                uploadSection.classList.add('hidden');
                 
             } catch (e) {
                 console.error("Processing error:", e);
@@ -328,21 +521,21 @@
         // --- GEMINI API INTERACTION ---
         async function getFinancialAnalysis(fileParts) {
             const prompt = `
-                You are an expert financial analyst. Analyze the provided financial documents (Income Statement and Balance Sheet).
-                Extract the key financial data and provide a concise analysis.
-                Your response MUST be a single, valid JSON object. Do not include any text or markdown formatting before or after the JSON object.
+                You are an expert financial analyst. Analyze the provided financial documents (Income Statement, Balance Sheet, and optionally a Shipments by Product report).
+                Extract the key financial data. Your response MUST be a single, valid JSON object.
                 
-                The JSON object must conform to the following schema:
+                The JSON object must conform to this schema:
                 {
-                  "monthlyData": [
-                    { "month": "Month Year", "revenue": 12345.67, "costOfSales": 1234.56, "otherExpenses": 123.45, "netProfit": 123.45 }
-                  ],
+                  "monthlyData": [ { "month": "Month Year", "revenue": 12345.67, "costOfSales": 1234.56, "costOfGoodsSold": 1234.56, "otherExpenses": 123.45, "netProfit": 123.45 } ],
                   "ytdTotals": { "revenue": 123456.78, "netProfit": 12345.67 },
                   "financialPosition": { "totalAssets": 123456.78, "totalLiabilities": 12345.67, "totalEquity": 12345.67, "currentAssets": 12345.67, "currentLiabilities": 1234.56 },
-                  "aiAnalysis": "A concise, professional summary of the company's performance for the LATEST period provided, highlighting key trends, strengths, weaknesses, and actionable recommendations. Analyze the profit margin and current ratio for the latest period."
+                  "detailedCostOfSales": [ { "category": "Expense Name", "value": 12345.67 } ],
+                  "detailedOtherExpenses": [ { "category": "Expense Name", "value": 12345.67 } ],
+                  "productPerformance": [ { "rangeName": "Product Name", "sales": 12345.67, "cost": 1234.56 } ],
+                  "aiAnalysis": "A concise, professional summary of the company's performance for the LATEST period provided, highlighting key trends, strengths, weaknesses, and actionable recommendations."
                 }
 
-                Extract data for all available months in the documents. Ensure all numerical values are numbers, not strings.
+                Extract data for all available months in the documents. For detailed breakdowns and product performance, provide the Year-to-Date (YTD) cumulative totals from the latest report. If a product performance report is not provided, return an empty array for "productPerformance".
             `;
 
             const requestBody = {
@@ -350,7 +543,6 @@
                 generationConfig: { responseMimeType: "application/json" }
             };
             
-            // The API key is now inserted here.
             const apiKey = "AIzaSyC-yMxXO1HXwrRsN4Xz71363ul5HHtgxXA"; 
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
 
@@ -360,13 +552,10 @@
                 body: JSON.stringify(requestBody)
             });
 
-            if (!response.ok) {
-                throw new Error(`API request failed with status ${response.status}`);
-            }
-
+            if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
             const result = await response.json();
             
-            if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) {
+            if (result.candidates?.[0]?.content?.parts?.[0]) {
                 return JSON.parse(result.candidates[0].content.parts[0].text);
             } else {
                 throw new Error("Invalid response structure from Gemini API.");
@@ -375,27 +564,21 @@
         
         // --- DATA MERGING LOGIC ---
         function mergeFinancialData(existingData, newData) {
-            if (!existingData || !existingData.monthlyData) {
-                return newData; // If no old data, the new data is the whole dataset
-            }
+            if (!existingData || !existingData.monthlyData) return newData;
             
             const mergedMonthlyData = new Map(existingData.monthlyData.map(item => [item.month, item]));
-            
-            newData.monthlyData.forEach(item => {
-                mergedMonthlyData.set(item.month, item); // Add or overwrite monthly data
-            });
-
-            // Convert map back to array and sort by date for charting
-            const sortedMonthlyData = Array.from(mergedMonthlyData.values()).sort((a, b) => {
-                return new Date(a.month) - new Date(b.month);
-            });
+            newData.monthlyData.forEach(item => mergedMonthlyData.set(item.month, item));
+            const sortedMonthlyData = Array.from(mergedMonthlyData.values()).sort((a, b) => new Date(a.month) - new Date(b.month));
 
             return {
                 monthlyData: sortedMonthlyData,
-                // Always use the latest YTD, financial position, and analysis
                 ytdTotals: newData.ytdTotals,
                 financialPosition: newData.financialPosition,
-                aiAnalysis: newData.aiAnalysis
+                aiAnalysis: newData.aiAnalysis,
+                detailedCostOfSales: newData.detailedCostOfSales,
+                detailedOtherExpenses: newData.detailedOtherExpenses,
+                // If new product data exists, use it, otherwise keep the old data
+                productPerformance: newData.productPerformance && newData.productPerformance.length > 0 ? newData.productPerformance : existingData.productPerformance
             };
         }
 
@@ -408,12 +591,12 @@
                 statusSection.classList.add('hidden');
                 if (docSnap.exists()) {
                     currentData = docSnap.data().analysis;
-                    renderDashboard(currentData);
+                    setViewMode('ytd');
                     dashboardSection.classList.remove('hidden');
                 } else {
                     currentData = null;
                     dashboardSection.classList.add('hidden');
-                    uploadSection.classList.remove('hidden'); // Show upload if no data
+                    uploadSection.classList.remove('hidden');
                 }
             }, (error) => {
                 console.error("Firestore listener error:", error);
@@ -422,100 +605,238 @@
         }
 
         async function saveData(analysisData) {
-            if (!userId) throw new Error("User not authenticated. Cannot save data.");
+            if (!userId) throw new Error("User not authenticated.");
             const docRef = doc(db, `artifacts/${appId}/users/${userId}/financial_data/latest`);
             await setDoc(docRef, { analysis: analysisData, lastUpdated: new Date() });
         }
 
-        async function clearAllData() {
-            if (!userId) throw new Error("User not authenticated. Cannot clear data.");
-            const docRef = doc(db, `artifacts/${appId}/users/${userId}/financial_data/latest`);
-            showStatus("Deleting all data...");
-            await deleteDoc(docRef);
-            // The onSnapshot listener will automatically handle the UI update
+        // --- DASHBOARD RENDERING ---
+        function destroyAllCharts() {
+            Object.values(chartInstances).forEach(chart => chart.destroy());
+            chartInstances = {};
         }
 
-        // --- DASHBOARD RENDERING ---
-        function renderDashboard(data) {
-            errorSection.classList.add('hidden');
-            
-            const ytdMargin = (data.ytdTotals.revenue > 0) ? (data.ytdTotals.netProfit / data.ytdTotals.revenue) * 100 : 0;
-            const currentRatio = (data.financialPosition.currentLiabilities > 0) ? (data.financialPosition.currentAssets / data.financialPosition.currentLiabilities) : 0;
+        function setViewMode(mode) {
+            currentViewMode = mode;
+            viewYtdBtn.classList.toggle('bg-indigo-600', mode === 'ytd');
+            viewYtdBtn.classList.toggle('text-white', mode === 'ytd');
+            viewAllBtn.classList.toggle('bg-indigo-600', mode === 'all');
+            viewAllBtn.classList.toggle('text-white', mode === 'all');
+            if (currentData) renderDashboard(currentData);
+        }
 
-            document.getElementById('kpi-ytd-profit').textContent = `R${data.ytdTotals.netProfit.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-            document.getElementById('kpi-ytd-revenue').textContent = `R${data.ytdTotals.revenue.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        function getFinancialYearData(allData) {
+            const now = new Date();
+            let currentYear = now.getFullYear();
+            const marchFirst = new Date(currentYear, 2, 1);
+            let startYear = now < marchFirst ? currentYear - 1 : currentYear;
+            const fyStartDate = new Date(startYear, 2, 1);
+            return allData.filter(d => new Date(d.month) >= fyStartDate);
+        }
+
+        function renderDashboard(fullData) {
+            destroyAllCharts();
+            errorSection.classList.add('hidden');
+
+            const isYtdView = currentViewMode === 'ytd';
+            const dataForView = isYtdView ? getFinancialYearData(fullData.monthlyData) : fullData.monthlyData;
+            const startYear = new Date(getFinancialYearData(fullData.monthlyData)[0]?.month || Date.now()).getFullYear();
+            dashboardTitle.textContent = `Dashboard & Analysis (${isYtdView ? `FY ${startYear + 1} YTD` : 'All Time'})`;
+
+            const ytdMargin = (fullData.ytdTotals.revenue > 0) ? (fullData.ytdTotals.netProfit / fullData.ytdTotals.revenue) * 100 : 0;
+            const currentRatio = (fullData.financialPosition.currentLiabilities > 0) ? (fullData.financialPosition.currentAssets / fullData.financialPosition.currentLiabilities) : 0;
+            document.getElementById('kpi-projected-profit').textContent = `R${calculateProjectedProfit().toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            document.getElementById('kpi-ytd-profit').textContent = `R${fullData.ytdTotals.netProfit.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             document.getElementById('kpi-ytd-margin').textContent = `${ytdMargin.toFixed(2)}%`;
             document.getElementById('kpi-current-ratio').textContent = currentRatio.toFixed(2);
-            document.getElementById('ai-analysis').textContent = data.aiAnalysis;
-
-            const labels = data.monthlyData.map(d => d.month);
+            document.getElementById('ai-analysis').textContent = fullData.aiAnalysis;
             
-            const netProfitData = {
-                labels: labels,
-                datasets: [{
-                    label: 'Net Profit',
-                    data: data.monthlyData.map(d => d.netProfit),
-                    borderColor: '#4f46e5',
-                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                    fill: true,
-                    tension: 0.3
-                }]
-            };
-            if (netProfitChart) netProfitChart.destroy();
-            netProfitChart = new Chart(document.getElementById('netProfitChart'), { type: 'line', data: netProfitData, options: getChartOptions(true) });
+            renderHealthDashboard(fullData);
 
-            const revenueVsCostData = {
-                labels: labels,
-                datasets: [
-                    {
-                        label: 'Total Revenue',
-                        data: data.monthlyData.map(d => d.revenue),
-                        backgroundColor: 'rgba(16, 185, 129, 0.7)',
-                    },
-                    {
-                        label: 'Total Costs',
-                        data: data.monthlyData.map(d => d.costOfSales + d.otherExpenses),
-                        backgroundColor: 'rgba(239, 68, 68, 0.7)',
-                    }
-                ]
-            };
-            if (revenueVsCostChart) revenueVsCostChart.destroy();
-            revenueVsCostChart = new Chart(document.getElementById('revenueVsCostChart'), { type: 'bar', data: revenueVsCostData, options: getChartOptions(true) });
+            const labels = dataForView.map(d => d.month);
+            
+            chartInstances.netProfitChart = new Chart(document.getElementById('netProfitChart'), { type: 'line', data: { labels, datasets: [{ label: 'Net Profit', data: dataForView.map(d => d.netProfit), borderColor: '#4f46e5', backgroundColor: 'rgba(79, 70, 229, 0.1)', fill: true, tension: 0.3 }] }, options: getChartOptions(true) });
+            chartInstances.revenueVsCostChart = new Chart(document.getElementById('revenueVsCostChart'), { type: 'bar', data: { labels, datasets: [{ label: 'Total Revenue', data: dataForView.map(d => d.revenue), backgroundColor: 'rgba(16, 185, 129, 0.7)' }, { label: 'Total Costs', data: dataForView.map(d => d.costOfSales + d.otherExpenses), backgroundColor: 'rgba(239, 68, 68, 0.7)' }] }, options: getChartOptions(true) });
+            
+            renderDetailedCharts(fullData);
         }
         
+        function renderHealthDashboard(data) {
+            const latestMonth = data.monthlyData[data.monthlyData.length - 1];
+            if (!latestMonth) return;
+
+            document.getElementById('latest-month-label').textContent = latestMonth.month;
+
+            const avgMonthlyProfitTarget = targets.annualProfit / 12;
+            const latestMonthProfitMargin = (latestMonth.revenue > 0) ? (latestMonth.netProfit / latestMonth.revenue) * 100 : 0;
+            const latestMonthMaterialCostPerc = (latestMonth.revenue > 0) ? (latestMonth.costOfGoodsSold / latestMonth.revenue) * 100 : 0;
+
+            const ytdData = getFinancialYearData(data.monthlyData);
+            const ytdTotalRevenue = ytdData.reduce((s, i) => s + i.revenue, 0);
+            const ytdTotalProfit = ytdData.reduce((s, i) => s + i.netProfit, 0);
+            const ytdTotalCOGS = ytdData.reduce((s, i) => s + i.costOfGoodsSold, 0);
+            
+            const ytdProfitMargin = (ytdTotalRevenue > 0) ? (ytdTotalProfit / ytdTotalRevenue) * 100 : 0;
+            const ytdMaterialCostPerc = (ytdTotalRevenue > 0) ? (ytdTotalCOGS / ytdTotalRevenue) * 100 : 0;
+
+            const monthProfitStatus = getPerformanceStatus(latestMonth.netProfit, avgMonthlyProfitTarget);
+            const monthMarginStatus = getPerformanceStatus(latestMonthProfitMargin, targets.profitMargin);
+            const monthMaterialStatus = getPerformanceStatus(latestMonthMaterialCostPerc, targets.materialCostPercentage, true);
+
+            const ytdMarginStatus = getPerformanceStatus(ytdProfitMargin, targets.profitMargin);
+            const ytdMaterialStatus = getPerformanceStatus(ytdMaterialCostPerc, targets.materialCostPercentage, true);
+            
+            updateCard('current-month', [monthProfitStatus, monthMarginStatus, monthMaterialStatus]);
+            document.getElementById('current-month-profit-status').textContent = monthProfitStatus.text;
+            document.getElementById('current-month-profit-status').className = `font-medium ${monthProfitStatus.textColorClass}`;
+            document.getElementById('current-month-margin-status').textContent = monthMarginStatus.text;
+            document.getElementById('current-month-margin-status').className = `font-medium ${monthMarginStatus.textColorClass}`;
+            document.getElementById('current-month-material-cost-status').textContent = monthMaterialStatus.text;
+            document.getElementById('current-month-material-cost-status').className = `font-medium ${monthMaterialStatus.textColorClass}`;
+
+            updateCard('ytd', [ytdMarginStatus, ytdMaterialStatus]);
+            document.getElementById('ytd-margin-status').textContent = ytdMarginStatus.text;
+            document.getElementById('ytd-margin-status').className = `font-medium ${ytdMarginStatus.textColorClass}`;
+            document.getElementById('ytd-material-cost-status').textContent = ytdMaterialStatus.text;
+            document.getElementById('ytd-material-cost-status').className = `font-medium ${ytdMaterialStatus.textColorClass}`;
+        }
+
+        function renderDetailedCharts(data) {
+            const totalCoS = data.detailedCostOfSales.reduce((sum, item) => sum + item.value, 0);
+            const totalOpEx = data.detailedOtherExpenses.reduce((sum, item) => sum + item.value, 0);
+
+            chartInstances.overallCostStructureChart = new Chart(document.getElementById('overallCostStructureChart'), { type: 'doughnut', data: { labels: ['Total Cost of Sales', 'Total Other Expenses'], datasets: [{ data: [totalCoS, totalOpEx], backgroundColor: ['#8b5cf6', '#d946ef'], hoverOffset: 8 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }, datalabels: { formatter: (value, ctx) => { let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); return (value * 100 / sum).toFixed(1) + "%"; }, color: '#fff' } } } });
+        
+            renderHorizontalBarChart('detailedCostOfSalesChart', data.detailedCostOfSales, totalCoS, 150000);
+            renderHorizontalBarChart('detailedOtherExpensesChart', data.detailedOtherExpenses, totalOpEx, 100000);
+
+            if (data.productPerformance && data.productPerformance.length > 0) {
+                renderProductPerformanceChart(data.productPerformance);
+            }
+        }
+        
+        function renderProductPerformanceChart(productData) {
+            const sortedData = productData.map(item => ({ ...item, costPercentage: item.sales > 0 ? (item.cost / item.sales) * 100 : 0 })).sort((a,b) => b.costPercentage - a.costPercentage);
+            const labels = sortedData.map(p => p.rangeName);
+            const values = sortedData.map(p => p.costPercentage);
+            const backgroundColors = values.map(p => {
+                if (p > (targets.materialCostPercentage * 1.15)) return 'rgba(239, 68, 68, 0.7)';
+                if (p > targets.materialCostPercentage) return 'rgba(249, 115, 22, 0.7)';
+                return 'rgba(34, 197, 94, 0.7)';
+            });
+            const options = { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { anchor: 'end', align: 'end', formatter: (val) => `${val.toFixed(1)}%`, color: '#374151', font: { size: 9 } } }, scales: { x: { ticks: { callback: (value) => `${value}%` } } } };
+            chartInstances.productRangeChart = new Chart(document.getElementById('productRangeChart'), { type: 'bar', data: { labels, datasets: [{ data: values, backgroundColor: backgroundColors }] }, options });
+        }
+
+        function renderHorizontalBarChart(canvasId, rawData, totalValue, threshold) {
+            let mainItems = [];
+            let otherTotal = 0;
+            rawData.forEach(item => {
+                if (Math.abs(item.value) >= threshold) mainItems.push(item);
+                else otherTotal += item.value;
+            });
+            if (otherTotal !== 0) mainItems.push({ category: `Other Misc. Items`, value: otherTotal });
+            mainItems.sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+
+            const labels = mainItems.map(item => item.category);
+            const values = mainItems.map(item => item.value);
+
+            const options = { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { anchor: 'end', align: (ctx) => ctx.dataset.data[ctx.dataIndex] >= 0 ? 'end' : 'start', formatter: (val) => `${(val / totalValue * 100).toFixed(1)}%`, color: (ctx) => ctx.dataset.data[ctx.dataIndex] >= 0 ? '#374151' : '#b91c1c', font: { size: 9, weight: '500' } } }, scales: { x: { ticks: { callback: (value) => `R${(value / 1000000).toFixed(1)}M` } } } };
+            chartInstances[canvasId] = new Chart(document.getElementById(canvasId), { type: 'bar', data: { labels, datasets: [{ data: values, backgroundColor: (ctx) => ctx.raw >= 0 ? 'rgba(59, 130, 246, 0.7)' : 'rgba(239, 68, 68, 0.6)' }] }, options });
+        }
+
+        function getPerformanceStatus(value, target, lowerIsBetter = false) {
+            const ratio = value / target;
+            let status, text;
+            if (lowerIsBetter) {
+                if (value <= target) status = 'green';
+                else if (value <= target * 1.05) status = 'orange';
+                else status = 'red';
+                text = `${value.toFixed(2)}% vs ${target.toFixed(2)}%`;
+            } else {
+                if (ratio >= 1) status = 'green';
+                else if (ratio >= 0.9) status = 'orange';
+                else status = 'red';
+                text = `${(ratio * 100).toFixed(0)}% of target`;
+            }
+            const colorMap = { green: 'text-green-700', orange: 'text-orange-700', red: 'text-red-700' };
+            return { status, text, textColorClass: colorMap[status] };
+        }
+
+        function updateCard(prefix, statuses) {
+            const indicator = document.getElementById(`${prefix}-health-indicator`);
+            const textEl = document.getElementById(`${prefix}-health-text`);
+            const colorMap = { green: 'bg-green-500', orange: 'bg-orange-500', red: 'bg-red-500' };
+            const textMap = { green: 'On Track', orange: 'Caution', red: 'Below Target' };
+            let finalStatus = 'green';
+            if (statuses.some(s => s.status === 'red')) finalStatus = 'red';
+            else if (statuses.some(s => s.status === 'orange')) finalStatus = 'orange';
+            indicator.className = `w-8 h-8 rounded-full mr-4 ${colorMap[finalStatus]}`;
+            textEl.textContent = textMap[finalStatus];
+            textEl.className = `text-xl font-semibold ${statuses[0].textColorClass.replace('bg-', 'text-')}`;
+        }
+
         function getChartOptions(isCurrency = false) {
-            return {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'top' },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.dataset.label || '';
-                                if (label) { label += ': '; }
-                                if (context.parsed.y !== null) {
-                                    label += isCurrency ? `R${context.parsed.y.toLocaleString('en-ZA')}` : context.parsed.y;
-                                }
-                                return label;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                if (!isCurrency) return value;
-                                if (value >= 1000000) return `R${value / 1000000}M`;
-                                if (value >= 1000) return `R${value / 1000}K`;
-                                return `R${value}`;
-                            }
-                        }
-                    }
+            return { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label || ''}: ${isCurrency ? `R${ctx.parsed.y.toLocaleString('en-ZA')}` : ctx.parsed.y}` } } }, scales: { y: { beginAtZero: true, ticks: { callback: (val) => isCurrency ? (val >= 1000000 ? `R${val / 1000000}M` : `R${val / 1000}K`) : val } } } };
+        }
+        
+        function calculateProjectedProfit() {
+            let profitGrowthRates = [];
+            const years = Object.keys(historicalAnnualData).sort();
+            for (let i = 1; i < years.length; i++) {
+                const prevYear = historicalAnnualData[years[i-1]];
+                const currentYear = historicalAnnualData[years[i]];
+                if (prevYear.netProfit && currentYear.netProfit) {
+                    profitGrowthRates.push((currentYear.netProfit - prevYear.netProfit) / prevYear.netProfit);
                 }
-            };
+            }
+            const averageProfitGrowthRate = profitGrowthRates.length > 0 ? profitGrowthRates.reduce((a, b) => a + b, 0) / profitGrowthRates.length : 0.05;
+            const lastYearProfit = historicalAnnualData[years[years.length - 1]].netProfit;
+            return lastYearProfit * (1 + averageProfitGrowthRate);
+        }
+
+        // --- CHATBOT FUNCTIONS ---
+        async function handleChatSubmit() {
+            const userQuery = chatInput.value.trim();
+            if (!userQuery || !currentData) return;
+
+            addChatMessage(userQuery, 'user');
+            chatInput.value = '';
+            
+            const botMessageDiv = addChatMessage('...', 'bot');
+            
+            try {
+                const prompt = `You are a helpful financial assistant. The user's financial data is provided below in JSON format. Answer the user's question based ONLY on this data. Perform calculations if necessary. Be concise and clear. Data: ${JSON.stringify(currentData)}. Question: ${userQuery}`;
+                
+                const requestBody = { contents: [{ parts: [{ text: prompt }] }] };
+                const apiKey = "AIzaSyC-yMxXO1HXwrRsN4Xz71363ul5HHtgxXA"; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+                const result = await response.json();
+                const botResponse = result.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't process that.";
+                
+                botMessageDiv.textContent = botResponse;
+
+            } catch (e) {
+                console.error("Chatbot error:", e);
+                botMessageDiv.textContent = "Sorry, an error occurred while getting your answer.";
+            }
+        }
+
+        function addChatMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${sender}-message`;
+            messageDiv.textContent = text;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return messageDiv;
         }
 
         // --- UTILITY FUNCTIONS ---
@@ -533,7 +854,6 @@
             errorText.textContent = message;
         }
 
-        // --- START THE APP ---
         setupUIHandlers();
         initialize();
 
