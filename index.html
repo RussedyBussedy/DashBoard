@@ -344,7 +344,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- DOM ELEMENT REFERENCES ---
         const dropZone = document.getElementById('drop-zone');
@@ -371,7 +371,7 @@
 
         // --- STATE MANAGEMENT ---
         let uploadedFiles = [];
-        let db, auth, userId;
+        let db, auth;
         let chartInstances = {};
         let currentData = null;
         let currentViewMode = 'ytd';
@@ -409,7 +409,6 @@
                 auth = getAuth(app);
                 onAuthStateChanged(auth, (user) => {
                     if (user) {
-                        userId = user.uid;
                         statusText.textContent = 'Authenticated. Checking for saved data...';
                         setupRealtimeListener();
                     }
@@ -577,15 +576,13 @@
                 aiAnalysis: newData.aiAnalysis,
                 detailedCostOfSales: newData.detailedCostOfSales,
                 detailedOtherExpenses: newData.detailedOtherExpenses,
-                // If new product data exists, use it, otherwise keep the old data
                 productPerformance: newData.productPerformance && newData.productPerformance.length > 0 ? newData.productPerformance : existingData.productPerformance
             };
         }
 
         // --- FIRESTORE DATA MANAGEMENT ---
         async function setupRealtimeListener() {
-            if (!userId) return;
-            const docRef = doc(db, `artifacts/${appId}/users/${userId}/financial_data/latest`);
+            const docRef = doc(db, `artifacts/${appId}/public/data/dashboard/latest`);
             
             onSnapshot(docRef, (docSnap) => {
                 statusSection.classList.add('hidden');
@@ -600,13 +597,27 @@
                 }
             }, (error) => {
                 console.error("Firestore listener error:", error);
-                showError("Could not listen for data updates.");
+                if (error.code === 'permission-denied') {
+                    const errorMessage = `Firestore Permission Error: The application is not allowed to access the database.
+                    \nThis is likely due to incorrect Firestore Security Rules. Please go to your Firebase Console -> Firestore Database -> Rules tab and ensure they are set to allow public access.
+                    \nThe correct rules for a public dashboard are:
+                    \nrules_version = '2';
+                    service cloud.firestore {
+                      match /databases/{database}/documents {
+                        match /artifacts/{appId}/public/data/dashboard/{document=**} {
+                          allow read, write: if request.auth != null;
+                        }
+                      }
+                    }`;
+                    showError(errorMessage);
+                } else {
+                    showError("Could not listen for data updates.");
+                }
             });
         }
 
         async function saveData(analysisData) {
-            if (!userId) throw new Error("User not authenticated.");
-            const docRef = doc(db, `artifacts/${appId}/users/${userId}/financial_data/latest`);
+            const docRef = doc(db, `artifacts/${appId}/public/data/dashboard/latest`);
             await setDoc(docRef, { analysis: analysisData, lastUpdated: new Date() });
         }
 
