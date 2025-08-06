@@ -249,10 +249,10 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200 flex flex-col justify-between">
                         <div>
-                            <h3 class="text-base font-medium text-gray-500">Progress to Annual Target</h3>
+                            <h3 id="kpi-profit-title" class="text-base font-medium text-gray-500">Progress to Annual Target</h3>
                             <p id="kpi-ytd-profit" class="text-3xl font-semibold text-gray-900 mt-2">R0.00</p>
                         </div>
-                        <div class="mt-4">
+                        <div id="kpi-profit-progress-container" class="mt-4">
                             <div class="flex justify-between text-sm text-gray-600 mb-1"><span>Progress</span><span id="progress-percentage" class="font-semibold text-indigo-600">0%</span></div>
                             <div class="w-full bg-gray-200 rounded-full h-3 relative"><div id="progress-bar" class="bg-indigo-600 h-3 rounded-full" style="width: 0%"></div></div>
                             <p class="text-xs text-right text-gray-500 mt-1">Target: <span id="kpi-target-profit">R0.00</span></p>
@@ -563,7 +563,10 @@
                   "aiAnalysis": "A concise, professional summary of the company's performance for the LATEST period provided, highlighting key trends, strengths, weaknesses, and actionable recommendations."
                 }
 
-                Extract data for all available months in the documents. For detailed breakdowns and product performance, provide the Year-to-Date (YTD) cumulative totals from the latest report. If a product performance report is not provided, return an empty array for "productPerformance".
+                For the "monthlyData" array, scan all provided documents and extract the data for *every single month* you find. Do not limit this to a specific year.
+                For "ytdTotals", "detailedCostOfSales", and "detailedOtherExpenses", use the cumulative 'Tot Actual' or 'YTD' columns from the most recent income statement.
+                For "financialPosition", use the data from the most recent balance sheet.
+                If a product performance report is provided, use its data for "productPerformance"; otherwise, return an empty array.
             `;
 
             const requestBody = {
@@ -580,7 +583,12 @@
                 body: JSON.stringify(requestBody)
             });
 
-            if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+            if (!response.ok) {
+                 if (response.status === 403) {
+                    throw new Error("API request failed with status 403 (Forbidden). Please check that the 'Generative Language API' or 'Vertex AI API' is enabled in your Google Cloud project.");
+                }
+                throw new Error(`API request failed with status ${response.status}`);
+            }
             const result = await response.json();
             
             if (result.candidates?.[0]?.content?.parts?.[0]) {
@@ -720,6 +728,7 @@
             document.getElementById('kpi-projected-profit').textContent = `R${calculateProjectedProfit().toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             document.getElementById('kpi-ytd-profit').textContent = `R${totalProfitForView.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             document.getElementById('kpi-ytd-margin').textContent = `${marginForView.toFixed(2)}%`;
+            document.getElementById('kpi-material-cost-percentage').textContent = `${materialCostPercForView.toFixed(2)}%`;
             document.getElementById('kpi-current-ratio').textContent = (fullData.financialPosition.currentLiabilities > 0) ? (fullData.financialPosition.currentAssets / fullData.financialPosition.currentLiabilities).toFixed(2) : '0.00';
             document.getElementById('ai-analysis').textContent = fullData.aiAnalysis;
             
@@ -774,40 +783,47 @@
             document.getElementById('ytd-material-cost-status').className = `font-medium ${ytdMaterialStatus.textColorClass}`;
         }
         
-        function renderKpiProgressBars(fullData, ytdProfit, ytdMargin, ytdMaterialCostPerc) {
+        function renderKpiProgressBars(fullData, profitForView, marginForView, materialCostPercForView) {
+            const isYtdView = currentViewMode === 'ytd';
+            const ytdProfit = getFinancialYearData(fullData.monthlyData).reduce((sum, item) => sum + item.netProfit, 0);
+
             // Annual Target Progress
             const progressPercentage = (ytdProfit / targets.annualProfit) * 100;
             document.getElementById('progress-percentage').textContent = `${progressPercentage.toFixed(1)}%`;
             document.getElementById('progress-bar').style.width = `${Math.min(progressPercentage, 100)}%`;
             document.getElementById('kpi-target-profit').textContent = `R${targets.annualProfit.toLocaleString('en-ZA')}`;
+            document.getElementById('kpi-profit-title').textContent = isYtdView ? 'Progress to Annual Target' : 'Total Net Profit (All Time)';
+            document.getElementById('kpi-profit-progress-container').style.display = isYtdView ? 'block' : 'none';
 
             // Profit Margin Bar
             const marginIndicatorEl = document.getElementById('margin-indicator');
             const marginBarEl = document.getElementById('margin-bar');
-            if (ytdMargin >= targets.profitMargin) {
+            document.getElementById('kpi-margin-title').textContent = isYtdView ? 'YTD Profit Margin' : 'Avg. Profit Margin (All Time)';
+            if (marginForView >= targets.profitMargin) {
                 marginIndicatorEl.textContent = 'Above Target'; marginIndicatorEl.className = 'font-semibold text-teal-600';
                 marginBarEl.className = 'h-3 rounded-full bg-teal-500';
             } else {
                 marginIndicatorEl.textContent = 'Below Target'; marginIndicatorEl.className = 'font-semibold text-red-600';
                 marginBarEl.className = 'h-3 rounded-full bg-red-500';
             }
-            const marginScaleMaxVisual = Math.max(ytdMargin, targets.profitMargin, 15) * 1.2; 
-            marginBarEl.style.width = `${(ytdMargin / marginScaleMaxVisual) * 100}%`;
+            const marginScaleMaxVisual = Math.max(marginForView, targets.profitMargin, 15) * 1.2; 
+            marginBarEl.style.width = `${(marginForView / marginScaleMaxVisual) * 100}%`;
             document.getElementById('margin-target-line').style.left = `${(targets.profitMargin / marginScaleMaxVisual) * 100}%`;
             document.getElementById('kpi-margin-target').textContent = `${targets.profitMargin.toFixed(2)}%`;
 
             // Material Cost Bar
             const materialCostIndicatorEl = document.getElementById('material-cost-indicator');
             const materialCostBarEl = document.getElementById('material-cost-bar');
-            if (ytdMaterialCostPerc <= targets.materialCostPercentage) { 
+            document.getElementById('kpi-material-cost-title').textContent = isYtdView ? 'YTD Material Costs %' : 'Avg. Material Costs % (All Time)';
+            if (materialCostPercForView <= targets.materialCostPercentage) { 
                 materialCostIndicatorEl.textContent = 'Below Target'; materialCostIndicatorEl.className = 'font-semibold text-green-600';
                 materialCostBarEl.className = 'h-3 rounded-full bg-green-500';
             } else { 
                 materialCostIndicatorEl.textContent = 'Above Target'; materialCostIndicatorEl.className = 'font-semibold text-red-600';
                 materialCostBarEl.className = 'h-3 rounded-full bg-red-500';
             }
-            const materialCostScaleMaxVisual = Math.max(ytdMaterialCostPerc, targets.materialCostPercentage) * 1.2;
-            materialCostBarEl.style.width = `${(ytdMaterialCostPerc / materialCostScaleMaxVisual) * 100}%`;
+            const materialCostScaleMaxVisual = Math.max(materialCostPercForView, targets.materialCostPercentage) * 1.2;
+            materialCostBarEl.style.width = `${(materialCostPercForView / materialCostScaleMaxVisual) * 100}%`;
             document.getElementById('material-cost-target-line').style.left = `${(targets.materialCostPercentage / materialCostScaleMaxVisual) * 100}%`;
             document.getElementById('kpi-material-cost-target').textContent = `${targets.materialCostPercentage.toFixed(2)}%`;
         }
