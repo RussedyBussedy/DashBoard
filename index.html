@@ -737,8 +737,12 @@
 
             const labels = dataForView.map(d => d.month);
             
-            chartInstances.netProfitChart = new Chart(document.getElementById('netProfitChart'), { type: 'line', data: { labels, datasets: [{ label: 'Net Profit', data: dataForView.map(d => d.netProfit), borderColor: '#4f46e5', backgroundColor: 'rgba(79, 70, 229, 0.1)', fill: true, tension: 0.3 }] }, options: getChartOptions(true) });
-            chartInstances.revenueVsCostChart = new Chart(document.getElementById('revenueVsCostChart'), { type: 'bar', data: { labels, datasets: [{ label: 'Total Revenue', data: dataForView.map(d => d.revenue), backgroundColor: 'rgba(16, 185, 129, 0.7)' }, { label: 'Total Costs', data: dataForView.map(d => d.costOfSales + d.otherExpenses), backgroundColor: 'rgba(239, 68, 68, 0.7)' }] }, options: getChartOptions(true) });
+            const avgProfit = totalProfitForView / dataForView.length;
+            const avgRevenue = totalRevenueForView / dataForView.length;
+            const monthlyProfitTarget = targets.annualProfit / 12;
+
+            chartInstances.netProfitChart = new Chart(document.getElementById('netProfitChart'), { type: 'line', data: { labels, datasets: [ { label: 'Net Profit', data: dataForView.map(d => d.netProfit), borderColor: '#4f46e5', backgroundColor: 'rgba(79, 70, 229, 0.1)', fill: true, tension: 0.3 }, { label: 'Avg. Profit', data: Array(labels.length).fill(avgProfit), borderColor: '#10b981', borderDash: [5, 5], fill: false, pointRadius: 0 }, { label: 'Target', data: Array(labels.length).fill(monthlyProfitTarget), borderColor: '#f59e0b', borderDash: [5, 5], fill: false, pointRadius: 0 } ] }, options: getChartOptions(true) });
+            chartInstances.revenueVsCostChart = new Chart(document.getElementById('revenueVsCostChart'), { type: 'bar', data: { labels, datasets: [{ label: 'Total Revenue', data: dataForView.map(d => d.revenue), backgroundColor: 'rgba(16, 185, 129, 0.7)', type: 'bar' }, { label: 'Total Costs', data: dataForView.map(d => d.costOfSales + d.otherExpenses), backgroundColor: 'rgba(239, 68, 68, 0.7)', type: 'bar' }, { label: 'Avg. Revenue', data: Array(labels.length).fill(avgRevenue), borderColor: '#3b82f6', borderDash: [5, 5], fill: false, pointRadius: 0, type: 'line' }] }, options: getChartOptions(true) });
             
             renderDetailedCharts(fullData);
         }
@@ -806,7 +810,7 @@
                 marginIndicatorEl.textContent = 'Below Target'; marginIndicatorEl.className = 'font-semibold text-red-600';
                 marginBarEl.className = 'h-3 rounded-full bg-red-500';
             }
-            const marginScaleMaxVisual = Math.max(marginForView, targets.profitMargin, 15) * 1.2; 
+            const marginScaleMaxVisual = Math.max(marginForView, targets.profitMargin) * 1.1; 
             marginBarEl.style.width = `${(marginForView / marginScaleMaxVisual) * 100}%`;
             document.getElementById('margin-target-line').style.left = `${(targets.profitMargin / marginScaleMaxVisual) * 100}%`;
             document.getElementById('kpi-margin-target').textContent = `${targets.profitMargin.toFixed(2)}%`;
@@ -822,7 +826,7 @@
                 materialCostIndicatorEl.textContent = 'Above Target'; materialCostIndicatorEl.className = 'font-semibold text-red-600';
                 materialCostBarEl.className = 'h-3 rounded-full bg-red-500';
             }
-            const materialCostScaleMaxVisual = Math.max(materialCostPercForView, targets.materialCostPercentage) * 1.2;
+            const materialCostScaleMaxVisual = Math.max(materialCostPercForView, targets.materialCostPercentage) * 1.1;
             materialCostBarEl.style.width = `${(materialCostPercForView / materialCostScaleMaxVisual) * 100}%`;
             document.getElementById('material-cost-target-line').style.left = `${(targets.materialCostPercentage / materialCostScaleMaxVisual) * 100}%`;
             document.getElementById('kpi-material-cost-target').textContent = `${targets.materialCostPercentage.toFixed(2)}%`;
