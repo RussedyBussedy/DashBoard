@@ -817,7 +817,7 @@
             const materialCostPercForView = (totalRevenueForView > 0) ? (totalCOGSForView / totalRevenueForView) * 100 : 0;
 
             // Update KPIs
-            document.getElementById('kpi-projected-profit').textContent = `R${calculateProjectedProfit().toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            document.getElementById('kpi-projected-profit').textContent = `R${calculateProjectedProfit(fullData).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             document.getElementById('kpi-ytd-profit').textContent = `R${totalProfitForView.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             document.getElementById('kpi-ytd-margin').textContent = `${marginForView.toFixed(2)}%`;
             document.getElementById('kpi-material-cost-percentage').textContent = `${materialCostPercForView.toFixed(2)}%`;
@@ -1119,7 +1119,10 @@
             return { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label || ''}: ${isCurrency ? `R${ctx.parsed.y.toLocaleString('en-ZA')}` : ctx.parsed.y.toFixed(2) + unit}` } } }, scales: { y: { beginAtZero: true, ticks: { callback: (val) => isCurrency ? (val >= 1000000 ? `R${val / 1000000}M` : `R${val / 1000}K`) : val + unit } } } };
         }
         
-        function calculateProjectedProfit() {
+        function calculateProjectedProfit(fullData) {
+            if (!fullData || !fullData.monthlyData) return 0;
+
+            // 1. Calculate Historical Trend Projection
             let profitGrowthRates = [];
             const years = Object.keys(historicalAnnualData).sort();
             for (let i = 1; i < years.length; i++) {
@@ -1129,9 +1132,26 @@
                     profitGrowthRates.push((currentYear.netProfit - prevYear.netProfit) / prevYear.netProfit);
                 }
             }
-            const averageProfitGrowthRate = profitGrowthRates.length > 0 ? profitGrowthRates.reduce((a, b) => a + b, 0) / profitGrowthRates.length : 0.05;
+            const averageProfitGrowthRate = profitGrowthRates.length > 0 ? profitGrowthRates.reduce((a, b) => a + b, 0) / profitGrowthRates.length : 0.05; // Default 5% growth if no history
             const lastYearProfit = historicalAnnualData[years[years.length - 1]].netProfit;
-            return lastYearProfit * (1 + averageProfitGrowthRate);
+            const historicalProjection = lastYearProfit * (1 + averageProfitGrowthRate);
+
+            // 2. Calculate Current Year Run-Rate Projection
+            const ytdData = getFinancialYearData(fullData.monthlyData);
+            if (ytdData.length === 0) {
+                return historicalProjection; // Fallback to historical if no current year data
+            }
+            const ytdProfit = ytdData.reduce((sum, item) => sum + item.netProfit, 0);
+            const averageMonthlyYtdProfit = ytdProfit / ytdData.length;
+            const currentRunRateProjection = averageMonthlyYtdProfit * 12;
+
+            // 3. Create a Blended Projection
+            const currentYearWeight = ytdData.length / 12.0;
+            const historicalWeight = 1 - currentYearWeight;
+            
+            const blendedProjection = (currentRunRateProjection * currentYearWeight) + (historicalProjection * historicalWeight);
+            
+            return blendedProjection;
         }
 
         // --- CHATBOT FUNCTIONS ---
