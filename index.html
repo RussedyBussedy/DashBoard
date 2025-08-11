@@ -741,7 +741,7 @@
             const docRef = doc(db, `artifacts/${appId}/public/data/dashboard/latest`);
             await setDoc(docRef, { analysis: analysisData, lastUpdated: new Date() });
         }
-
+        
         async function clearAllData() {
             if (!confirm("Are you sure you want to delete all dashboard data? This action cannot be undone.")) return;
             showStatus("Deleting all data...");
