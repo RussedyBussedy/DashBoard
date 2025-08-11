@@ -1007,6 +1007,9 @@
                 }
             });
 
+            // Sort the data chronologically before rendering the chart
+            productHistory.sort((a, b) => parseMonthYear(a.month) - parseMonthYear(b.month));
+
             productChartContainer.classList.remove('hidden');
             const labels = productHistory.map(p => p.month);
             const data = productHistory.map(p => p.costPercentage);
@@ -1209,4 +1212,4 @@
 
     </script>
 </body>
-</html>
+</ht
