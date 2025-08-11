@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynamic Financial Dashboard</title>
+    <title>Blind Designs Financial Hub</title>
     
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -175,7 +175,7 @@
     <div class="container mx-auto p-4 md:p-8">
         
         <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-gray-900">Dynamic Financial Dashboard</h1>
+            <h1 class="text-4xl font-bold text-gray-900">Blind Designs Financial Hub</h1>
             <p class="text-lg text-gray-600 mt-2">Your live financial analysis tool, powered by AI.</p>
         </header>
 
@@ -327,7 +327,7 @@
                         <div id="content-product_performance" class="tab-content active">
                              <div class="flex flex-col md:flex-row gap-4 items-center mb-6">
                                 <div class="flex-grow w-full md:w-auto">
-                                    <label for="product-select" class="block text-sm font-medium text-gray-700">Select a Product</label>
+                                    <label for="product-select" class="block text-sm font-medium text-gray-700">Underperforming Products</label>
                                     <select id="product-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"></select>
                                 </div>
                                 <button id="product-ai-btn" class="w-full md:w-auto bg-indigo-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-600 transition-colors duration-150 flex items-center justify-center">
@@ -829,8 +829,8 @@
 
             const labels = dataForView.map(d => d.month);
             
-            const avgProfit = totalProfitForView / dataForView.length;
-            const avgRevenue = totalRevenueForView / dataForView.length;
+            const avgProfit = dataForView.length > 0 ? totalProfitForView / dataForView.length : 0;
+            const avgRevenue = dataForView.length > 0 ? totalRevenueForView / dataForView.length : 0;
             const monthlyProfitTarget = targets.annualProfit / 12;
 
             chartInstances.netProfitChart = new Chart(document.getElementById('netProfitChart'), { type: 'line', data: { labels, datasets: [ { label: 'Net Profit', data: dataForView.map(d => d.netProfit), borderColor: '#4f46e5', backgroundColor: 'rgba(79, 70, 229, 0.1)', fill: true, tension: 0.3 }, { label: 'Avg. Profit', data: Array(labels.length).fill(avgProfit), borderColor: '#10b981', borderDash: [5, 5], fill: false, pointRadius: 0 }, { label: 'Target', data: Array(labels.length).fill(monthlyProfitTarget), borderColor: '#f59e0b', borderDash: [5, 5], fill: false, pointRadius: 0 } ] }, options: getChartOptions(true) });
@@ -941,30 +941,48 @@
                 return;
             }
 
-            const allProducts = new Set();
-            data.productPerformance.forEach(month => {
+            const underperformingProducts = new Map();
+            const latestThreeMonths = data.productPerformance.slice(-3);
+
+            latestThreeMonths.forEach(month => {
                 if (month && Array.isArray(month.products)) {
-                    month.products.forEach(product => allProducts.add(product.rangeName));
+                    month.products.forEach(product => {
+                        const productName = product.rangeName.toLowerCase();
+                        if (productName.includes('sample') || productName.includes('components') || productName === 'alterations') {
+                            return; // Skip excluded products
+                        }
+
+                        const costPercentage = product.sales > 0 ? (product.cost / product.sales) * 100 : 0;
+                        
+                        if (costPercentage > targets.materialCostPercentage) {
+                            const existing = underperformingProducts.get(product.rangeName);
+                            if (!existing || costPercentage > existing.maxCost) {
+                                underperformingProducts.set(product.rangeName, {
+                                    name: product.rangeName,
+                                    maxCost: costPercentage
+                                });
+                            }
+                        }
+                    });
                 }
             });
-            const sortedProducts = Array.from(allProducts).sort();
 
-            const latestMonthData = data.productPerformance[data.productPerformance.length - 1].products;
-            if (!Array.isArray(latestMonthData)) {
-                productSelect.innerHTML = '<option value="">Error: Invalid product data format</option>';
-                return;
+            const sortedUnderperformers = Array.from(underperformingProducts.values())
+                .sort((a, b) => b.maxCost - a.maxCost);
+
+            productSelect.innerHTML = ''; // Clear existing options
+
+            if (sortedUnderperformers.length === 0) {
+                 productSelect.innerHTML = '<option value="">No underperforming products</option>';
+                 return;
             }
-            const latestPerfMap = new Map(latestMonthData.map(p => [p.rangeName, (p.sales > 0 ? (p.cost / p.sales) * 100 : 0)]));
 
             productSelect.innerHTML = '<option value="">Select a product...</option>';
-            sortedProducts.forEach(productName => {
+            sortedUnderperformers.forEach(product => {
                 const option = document.createElement('option');
-                option.value = productName;
-                option.textContent = productName;
-                const latestPerf = latestPerfMap.get(productName);
-                if (latestPerf > targets.materialCostPercentage) {
-                    option.classList.add('text-red-600', 'font-bold');
-                }
+                option.value = product.name;
+                option.textContent = `${product.name} (${product.maxCost.toFixed(1)}% Cost)`;
+                option.classList.add('text-red-600', 'font-bold');
                 productSelect.appendChild(option);
             });
         }
