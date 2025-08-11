@@ -394,7 +394,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- DOM ELEMENT REFERENCES ---
         const dropZone = document.getElementById('drop-zone');
@@ -408,6 +408,7 @@
         const errorSection = document.getElementById('error-section');
         const errorText = document.getElementById('error-text');
         const addDataButton = document.getElementById('add-data-button');
+        const clearDataButton = document.getElementById('clear-data-button');
         const uploadSection = document.getElementById('upload-section');
         const tabsContainer = document.getElementById('tabs');
         const tabContentContainer = document.getElementById('tab-content-container');
@@ -493,6 +494,11 @@
             
             analyzeButton.addEventListener('click', processFiles);
             addDataButton.addEventListener('click', () => uploadSection.classList.toggle('hidden'));
+            clearDataButton.addEventListener('click', async () => {
+                if (confirm("Are you sure you want to delete all dashboard data? This action cannot be undone.")) {
+                    await clearAllData();
+                }
+            });
             
             setupTabDragAndDrop();
 
@@ -922,7 +928,10 @@
         }
         
         function renderProductPerformanceTab(data) {
-            if (!data.productPerformance || data.productPerformance.length === 0) return;
+            if (!data.productPerformance || data.productPerformance.length === 0) {
+                productSelect.innerHTML = '<option value="">No product data available</option>';
+                return;
+            }
 
             const allProducts = new Set();
             data.productPerformance.forEach(month => {
@@ -934,7 +943,6 @@
 
             const latestMonthData = data.productPerformance[data.productPerformance.length - 1].products;
             if (!Array.isArray(latestMonthData)) {
-                console.error("Latest month product data is not an array:", latestMonthData);
                 productSelect.innerHTML = '<option value="">Error: Invalid product data format</option>';
                 return;
             }
