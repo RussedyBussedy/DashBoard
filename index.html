@@ -742,6 +742,14 @@
             await setDoc(docRef, { analysis: analysisData, lastUpdated: new Date() });
         }
 
+        async function clearAllData() {
+            if (!confirm("Are you sure you want to delete all dashboard data? This action cannot be undone.")) return;
+            showStatus("Deleting all data...");
+            const docRef = doc(db, `artifacts/${appId}/public/data/dashboard/latest`);
+            await deleteDoc(docRef);
+            // The onSnapshot listener will automatically handle the UI update
+        }
+
         // --- DASHBOARD RENDERING ---
         function destroyAllCharts() {
             Object.values(chartInstances).forEach(chart => chart.destroy());
@@ -814,7 +822,7 @@
             document.getElementById('kpi-ytd-margin').textContent = `${marginForView.toFixed(2)}%`;
             document.getElementById('kpi-material-cost-percentage').textContent = `${materialCostPercForView.toFixed(2)}%`;
             document.getElementById('kpi-current-ratio').textContent = (fullData.financialPosition.currentLiabilities > 0) ? (fullData.financialPosition.currentAssets / fullData.financialPosition.currentLiabilities).toFixed(2) : '0.00';
-            document.getElementById('ai-analysis').textContent = fullData.aiAnalysis;
+            document.getElementById('ai-analysis').innerHTML = fullData.aiAnalysis;
             
             renderHealthDashboard(fullData);
             renderKpiProgressBars(fullData, totalProfitForView, marginForView, materialCostPercForView);
@@ -1166,7 +1174,7 @@
                 const result = await response.json();
                 const botResponse = result.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't process that.";
                 
-                botMessageDiv.textContent = botResponse;
+                botMessageDiv.innerHTML = botResponse.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/[\*#]/g, '');
 
             } catch (e) {
                 console.error("Chatbot error:", e);
