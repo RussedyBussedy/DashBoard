@@ -624,23 +624,23 @@
         // --- GEMINI API INTERACTION ---
         async function getFinancialAnalysis(fileParts) {
             const prompt = `
-                You are an expert financial analyst. Analyze the provided financial documents (Income Statement, Balance Sheet, and optionally a Shipments by Product report).
-                Extract the key financial data. Your response MUST be a single, valid JSON object.
+                You are a senior financial consultant providing a deep-dive analysis. Analyze the provided financial documents (Income Statement, Balance Sheet, and optionally a Shipments by Product report).
+                Your response MUST be a single, valid JSON object.
                 
                 The JSON object must conform to this schema:
                 {
                   "monthlyData": [ { "month": "Month Year", "revenue": 12345.67, "costOfSales": 1234.56, "costOfGoodsSold": 1234.56, "materialCosts": 900.00, "otherExpenses": 123.45, "netProfit": 12345.67 } ],
-                  "ytdTotals": { "revenue": 123456.78, "netProfit": 12345.67, "ytdMaterialCosts": 98765.43 },
+                  "ytdTotals": { "revenue": 123456.78, "netProfit": 12345.67 },
                   "financialPosition": { "totalAssets": 123456.78, "totalLiabilities": 12345.67, "totalEquity": 12345.67, "currentAssets": 12345.67, "currentLiabilities": 1234.56 },
                   "detailedCostOfSales": [ { "category": "Expense Name", "value": 12345.67 } ],
                   "detailedOtherExpenses": [ { "category": "Expense Name", "value": 12345.67 } ],
                   "productPerformance": [ { "month": "Month Year", "products": [ { "rangeName": "Product Name", "sales": 12345.67, "cost": 1234.56 } ] } ],
-                  "aiAnalysis": "A concise, professional summary of the company's performance for the LATEST period provided, highlighting key trends, strengths, weaknesses, and actionable recommendations.",
+                  "aiAnalysis": "A thorough, executive-level summary of the company's performance for the LATEST period. Structure it with these headings: Executive Summary, Key Performance Indicators (KPIs), Profitability Analysis, Financial Health (including comments on liquidity, solvency, and key ratios like Debt-to-Equity), and Actionable Recommendations.",
                   "productPerformanceAnalysis": "A concise, high-level summary of overall product performance, highlighting any general trends, products with significant problems (persistently high cost %), and products that are performing exceptionally well. Use clear headings and bold text for emphasis. Do not include conversational filler like 'Of course, here is...'. Just provide the analysis."
                 }
 
                 For the "monthlyData" array, scan all provided documents and extract the data for *every single month* you find. Also extract "materialCosts", which is a component of "costOfGoodsSold". Do not limit this to a specific year.
-                For "ytdTotals", use the cumulative 'Tot Actual' or 'YTD' columns from the most recent income statement. Also extract the cumulative total for "Material Costs" into "ytdMaterialCosts".
+                For "ytdTotals", use the cumulative 'Tot Actual' or 'YTD' columns from the most recent income statement.
                 For "financialPosition", use the data from the most recent balance sheet.
                 If a product performance report is provided, extract its data into the "productPerformance" array. Each element should represent a month from the report, containing a list of all products for that month. If no product report is provided, return an empty array for "productPerformance".
             `;
@@ -808,13 +808,7 @@
             // Calculate totals for the current view
             const totalRevenueForView = dataForView.reduce((sum, item) => sum + item.revenue, 0);
             const totalProfitForView = dataForView.reduce((sum, item) => sum + item.netProfit, 0);
-            
-            let totalMaterialCostsForView = 0;
-            if (isYtdView) {
-                totalMaterialCostsForView = fullData.ytdTotals.ytdMaterialCosts || dataForView.reduce((sum, item) => sum + (item.materialCosts || item.costOfGoodsSold || 0), 0);
-            } else {
-                totalMaterialCostsForView = dataForView.reduce((sum, item) => sum + (item.materialCosts || item.costOfGoodsSold || 0), 0);
-            }
+            const totalMaterialCostsForView = dataForView.reduce((sum, item) => sum + (item.materialCosts || 0), 0);
             
             const marginForView = (totalRevenueForView > 0) ? (totalProfitForView / totalRevenueForView) * 100 : 0;
             const materialCostPercForView = (totalRevenueForView > 0) ? (totalMaterialCostsForView / totalRevenueForView) * 100 : 0;
@@ -851,12 +845,12 @@
 
             const avgMonthlyProfitTarget = targets.annualProfit / 12;
             const latestMonthProfitMargin = (latestMonth.revenue > 0) ? (latestMonth.netProfit / latestMonth.revenue) * 100 : 0;
-            const latestMonthMaterialCostPerc = (latestMonth.revenue > 0) ? ((latestMonth.materialCosts || latestMonth.costOfGoodsSold || 0) / latestMonth.revenue) * 100 : 0;
+            const latestMonthMaterialCostPerc = (latestMonth.revenue > 0) ? ((latestMonth.materialCosts || 0) / latestMonth.revenue) * 100 : 0;
 
             const ytdData = getFinancialYearData(data.monthlyData);
             const ytdTotalRevenue = ytdData.reduce((s, i) => s + i.revenue, 0);
             const ytdTotalProfit = ytdData.reduce((s, i) => s + i.netProfit, 0);
-            const ytdTotalMaterialCosts = data.ytdTotals.ytdMaterialCosts || ytdData.reduce((s, i) => s + (i.materialCosts || i.costOfGoodsSold || 0), 0);
+            const ytdTotalMaterialCosts = ytdData.reduce((s, i) => s + (i.materialCosts || 0), 0);
             
             const ytdProfitMargin = (ytdTotalRevenue > 0) ? (ytdTotalProfit / ytdTotalRevenue) * 100 : 0;
             const ytdMaterialCostPerc = (ytdTotalRevenue > 0) ? (ytdTotalMaterialCosts / ytdTotalRevenue) * 100 : 0;
