@@ -688,7 +688,7 @@
         }
 
         async function getIncomeStatementData(file) {
-             const prompt = `Analyze this Income Statement. Return a JSON object with the schema {"monthlyData": [...], "ytdTotals": {...}, "detailedCostOfSales": [...], "detailedOtherExpenses": [...]}. Extract data for every single month present.`;
+             const prompt = `Analyze this Income Statement. Return a JSON object with the schema {"monthlyData": [...], "ytdTotals": {...}, "detailedCostOfSales": [...], "detailedOtherExpenses": [...]}. Extract data for every single month present. Crucially, ensure the 'materialCosts' field within 'monthlyData' is accurately extracted for each month.`;
              return callGeminiAPI(prompt, [file.inlineData], "application/json");
         }
 
@@ -879,7 +879,6 @@
             const avgMonthlyProfitTarget = targets.annualProfit / 12;
             const latestMonthProfitMargin = (latestMonth.revenue > 0) ? (latestMonth.netProfit / latestMonth.revenue) * 100 : 0;
             
-            // ✅ Fallback for latest month
             const latestMonthMaterialCostValue = (latestMonth.materialCosts && latestMonth.materialCosts !== 0)
                 ? latestMonth.materialCosts
                 : (latestMonth.costOfGoodsSold || 0);
@@ -890,7 +889,6 @@
             const ytdTotalRevenue = ytdData.reduce((s, i) => s + (i.revenue || 0), 0);
             const ytdTotalProfit = ytdData.reduce((s, i) => s + (i.netProfit || 0), 0);
 
-            // ✅ Fallback for YTD
             const ytdTotalMaterialCosts = ytdData.reduce((s, i) => {
                 const mc = (i.materialCosts && i.materialCosts !== 0) ? i.materialCosts : (i.costOfGoodsSold || 0);
                 return s + mc;
