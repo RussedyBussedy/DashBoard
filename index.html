@@ -610,24 +610,24 @@
 
                 let newAnalysis = {};
 
-                const incomeStatementFile = filesWithData.find((f, i) => fileTypes[i] === 'Income Statement');
-                if(incomeStatementFile) {
-                    showStatus("Analyzing Income Statement...");
-                    const incomeData = await getIncomeStatementData(incomeStatementFile);
+                const incomeStatementFiles = filesWithData.filter((f, i) => fileTypes[i] === 'Income Statement');
+                if(incomeStatementFiles.length > 0) {
+                    showStatus(`Analyzing ${incomeStatementFiles.length} Income Statement(s)...`);
+                    const incomeData = await getIncomeStatementData(incomeStatementFiles);
                     newAnalysis = {...newAnalysis, ...incomeData};
                 }
 
-                const balanceSheetFile = filesWithData.find((f, i) => fileTypes[i] === 'Balance Sheet');
-                 if(balanceSheetFile) {
-                    showStatus("Analyzing Balance Sheet...");
-                    const balanceData = await getBalanceSheetData(balanceSheetFile);
+                const balanceSheetFiles = filesWithData.filter((f, i) => fileTypes[i] === 'Balance Sheet');
+                 if(balanceSheetFiles.length > 0) {
+                    showStatus(`Analyzing ${balanceSheetFiles.length} Balance Sheet(s)...`);
+                    const balanceData = await getBalanceSheetData(balanceSheetFiles[balanceSheetFiles.length - 1]); // Only analyze the latest balance sheet
                     newAnalysis = {...newAnalysis, ...balanceData};
                 }
 
-                const productReportFile = filesWithData.find((f, i) => fileTypes[i] === 'Product Report');
-                if(productReportFile) {
-                    showStatus("Analyzing Product Report...");
-                    const productData = await getProductReportData(productReportFile);
+                const productReportFiles = filesWithData.filter((f, i) => fileTypes[i] === 'Product Report');
+                if(productReportFiles.length > 0) {
+                    showStatus(`Analyzing ${productReportFiles.length} Product Report(s)...`);
+                    const productData = await getProductReportData(productReportFiles);
                     newAnalysis = {...newAnalysis, ...productData};
                 }
                 
@@ -658,7 +658,7 @@
             };
             
             const apiKey = "AIzaSyC-yMxXO1HXwrRsN4Xz71363ul5HHtgxXA"; 
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${apiKey}`;
 
             const response = await fetch(apiUrl, {
                 method: 'POST',
@@ -683,13 +683,16 @@
         }
 
         async function identifyDocumentTypes(files) {
-            const prompt = `For each of the following documents, identify its type. The possible types are "Income Statement", "Balance Sheet", "Product Report", or "Unknown". Respond with a JSON array of strings, where each string is the type of the corresponding document. Document names: ${files.map(f => f.name).join(', ')}`;
-            return callGeminiAPI(prompt, files.map(f => f.inlineData), "application/json");
+            const identificationPromises = files.map(file => {
+                const prompt = `Identify the type of this document: ${file.name}. The possible types are "Income Statement", "Balance Sheet", "Product Report", or "Unknown". Respond with a single JSON string.`;
+                return callGeminiAPI(prompt, [file.inlineData], "application/json");
+            });
+            return Promise.all(identificationPromises);
         }
 
-        async function getIncomeStatementData(file) {
-             const prompt = `Analyze this Income Statement. Return a JSON object with the schema {"monthlyData": [...], "ytdTotals": {...}, "detailedCostOfSales": [...], "detailedOtherExpenses": [...]}. Extract data for every single month present. Crucially, ensure the 'materialCosts' field within 'monthlyData' is accurately extracted for each month.`;
-             return callGeminiAPI(prompt, [file.inlineData], "application/json");
+        async function getIncomeStatementData(files) {
+             const prompt = `Analyze these Income Statements. Return a single JSON object with the schema {"monthlyData": [...], "ytdTotals": {...}, "detailedCostOfSales": [...], "detailedOtherExpenses": [...]}. Combine data from all provided documents for every single month present. Crucially, ensure the 'materialCosts' field within 'monthlyData' is accurately extracted for each month.`;
+             return callGeminiAPI(prompt, files.map(f => f.inlineData), "application/json");
         }
 
         async function getBalanceSheetData(file) {
@@ -697,9 +700,9 @@
             return callGeminiAPI(prompt, [file.inlineData], "application/json");
         }
 
-        async function getProductReportData(file) {
-            const prompt = `Analyze this Product Report. Return a JSON object with the schema {"productPerformance": [...]}.`;
-            return callGeminiAPI(prompt, [file.inlineData], "application/json");
+        async function getProductReportData(files) {
+            const prompt = `Analyze these Product Reports. Return a single JSON object with the schema {"productPerformance": [...]}. Combine data from all provided documents.`;
+            return callGeminiAPI(prompt, files.map(f => f.inlineData), "application/json");
         }
 
         async function getFinalAnalyses(data) {
