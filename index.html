@@ -676,26 +676,23 @@
         
         // --- DATA MERGING LOGIC ---
         function mergeFinancialData(existingData, newData) {
-            if (!existingData || !existingData.monthlyData) return newData;
+            if (!existingData) return newData;
+        
+            const merged = { ...existingData, ...newData };
+
+            if (existingData.monthlyData && newData.monthlyData) {
+                const monthlyMap = new Map(existingData.monthlyData.map(item => [item.month, item]));
+                newData.monthlyData.forEach(item => monthlyMap.set(item.month, item));
+                merged.monthlyData = Array.from(monthlyMap.values()).sort((a, b) => parseMonthYear(a.month) - parseMonthYear(b.month));
+            }
+
+            if (existingData.productPerformance && newData.productPerformance) {
+                const productMap = new Map(existingData.productPerformance.map(item => [item.month, item]));
+                newData.productPerformance.forEach(item => productMap.set(item.month, item));
+                merged.productPerformance = Array.from(productMap.values()).sort((a, b) => parseMonthYear(a.month) - parseMonthYear(b.month));
+            }
             
-            const mergedMonthlyData = new Map(existingData.monthlyData.map(item => [item.month, item]));
-            newData.monthlyData.forEach(item => mergedMonthlyData.set(item.month, item));
-            const sortedMonthlyData = Array.from(mergedMonthlyData.values()).sort((a, b) => parseMonthYear(a.month) - parseMonthYear(b.month));
-
-            const mergedProductData = new Map(existingData.productPerformance.map(item => [item.month, item]));
-            newData.productPerformance.forEach(item => mergedProductData.set(item.month, item));
-            const sortedProductData = Array.from(mergedProductData.values()).sort((a,b) => parseMonthYear(a.month) - parseMonthYear(b.month));
-
-            return {
-                monthlyData: sortedMonthlyData,
-                ytdTotals: newData.ytdTotals,
-                financialPosition: newData.financialPosition,
-                aiAnalysis: newData.aiAnalysis,
-                detailedCostOfSales: newData.detailedCostOfSales,
-                detailedOtherExpenses: newData.detailedOtherExpenses,
-                productPerformance: sortedProductData,
-                productPerformanceAnalysis: newData.productPerformanceAnalysis
-            };
+            return merged;
         }
 
         // --- FIRESTORE DATA MANAGEMENT ---
