@@ -54,14 +54,6 @@
             margin-right: auto;
             height: 800px;
         }
-         .product-range-chart-container {
-            position: relative;
-            width: 100%;
-            max-width: 900px;
-            margin-left: auto;
-            margin-right: auto;
-            height: 1200px;
-        }
         .tab-btn {
             transition: all 0.3s ease-in-out;
             border-bottom-width: 2px;
@@ -83,6 +75,12 @@
         .kpi-progress-indicator::before {
             content: ''; position: absolute; top: -4px; bottom: -4px; width: 3px; 
             background-color: #4b5563; border-radius: 1.5px; z-index: 5; 
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(2px);
         }
 
         /* Chatbot Styles */
@@ -174,9 +172,18 @@
 
     <div class="container mx-auto p-4 md:p-8">
         
-        <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-gray-900">Blind Designs Financial Hub</h1>
-            <p class="text-lg text-gray-600 mt-2">Your live financial analysis tool, powered by AI.</p>
+        <header class="flex justify-between items-end mb-8 border-b pb-4">
+            <div class="text-left">
+                <h1 class="text-4xl font-bold text-gray-900">Blind Designs Financial Hub</h1>
+                <p class="text-lg text-gray-600 mt-2">Live financial control & AI analysis.</p>
+            </div>
+            <button id="open-settings-btn" class="flex items-center text-gray-600 hover:text-indigo-600 font-medium">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Settings & Targets
+            </button>
         </header>
 
         <main id="app" class="space-y-8">
@@ -185,6 +192,7 @@
                 <div class="flex items-center space-x-2 bg-white p-1 rounded-lg shadow">
                     <button id="view-ytd-btn" class="px-4 py-2 text-sm font-semibold rounded-md transition-colors">YTD</button>
                     <button id="view-all-btn" class="px-4 py-2 text-sm font-semibold rounded-md transition-colors">All Time</button>
+                    <button id="view-compare-btn" class="px-4 py-2 text-sm font-semibold rounded-md transition-colors hover:bg-gray-100">Compare Years</button>
                 </div>
                 <div class="flex gap-4">
                     <button id="add-data-button" class="bg-indigo-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-indigo-700 transition-colors duration-200">
@@ -206,12 +214,19 @@
                     <p class="mt-4 text-lg text-gray-600">
                         <span class="font-semibold text-indigo-600">Click to upload</span> or drag and drop your PDFs here.
                     </p>
-                    <p class="text-xs text-gray-500 mt-2">Upload Income Statement, Balance Sheet, and/or Shipments by Product reports.</p>
+                    <p class="text-xs text-gray-500 mt-2">Upload Income Statement, Balance Sheet, Inventory Valuation and/or Shipments by Product reports.</p>
                 </div>
                 <div id="file-list" class="mt-4 text-sm text-gray-700"></div>
                 <button id="analyze-button" class="mt-6 w-full bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 transition-colors duration-200">
                     Analyze & Update Dashboard
                 </button>
+            </section>
+
+            <section id="catalogue-section" class="hidden bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">Stored Document Catalogue</h2>
+                <div id="catalogue-file-list" class="mt-4 text-sm text-gray-700 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <p>No documents stored yet.</p>
+                </div>
             </section>
 
             <section id="status-section" class="hidden text-center p-6 bg-white rounded-2xl shadow-lg border border-gray-200">
@@ -301,13 +316,13 @@
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
-                        <h3 class="text-xl font-semibold mb-4 text-gray-800">Monthly Net Profit Trend</h3>
+                        <h3 id="chart-title-left" class="text-xl font-semibold mb-4 text-gray-800">Monthly Net Profit Trend</h3>
                         <div class="chart-container">
                             <canvas id="netProfitChart"></canvas>
                         </div>
                     </div>
                     <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
-                         <h3 class="text-xl font-semibold mb-4 text-gray-800">Monthly Revenue vs. Costs</h3>
+                         <h3 id="chart-title-right" class="text-xl font-semibold mb-4 text-gray-800">Monthly Revenue vs. Costs</h3>
                         <div class="chart-container">
                             <canvas id="revenueVsCostChart"></canvas>
                         </div>
@@ -325,6 +340,7 @@
                     <div class="border-b border-gray-300">
                         <nav id="tabs" class="-mb-px flex space-x-1 sm:space-x-4 overflow-x-auto pb-px" aria-label="Tabs">
                             <button draggable="true" data-target="product_performance" class="tab-btn whitespace-nowrap py-3 px-2 sm:px-4 font-medium text-sm text-gray-500 hover:text-indigo-600 active">Product Performance</button>
+                            <button draggable="true" data-target="inventory_performance" class="tab-btn whitespace-nowrap py-3 px-2 sm:px-4 font-medium text-sm text-gray-500 hover:text-indigo-600">Inventory Performance</button>
                             <button draggable="true" data-target="cost_structure" class="tab-btn whitespace-nowrap py-3 px-2 sm:px-4 font-medium text-sm text-gray-500 hover:text-indigo-600">Overall Costs</button>
                             <button draggable="true" data-target="detailed_cos" class="tab-btn whitespace-nowrap py-3 px-2 sm:px-4 font-medium text-sm text-gray-500 hover:text-indigo-600">Cost of Sales Details</button>
                             <button draggable="true" data-target="detailed_opex" class="tab-btn whitespace-nowrap py-3 px-2 sm:px-4 font-medium text-sm text-gray-500 hover:text-indigo-600">Other Expenses Details</button>
@@ -342,6 +358,18 @@
                                 <canvas id="productTrendChart"></canvas>
                             </div>
                             <div id="product-ai-insights-container" class="mt-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg prose prose-sm max-w-none hidden"></div>
+                        </div>
+                        <div id="content-inventory_performance" class="tab-content">
+                            <div id="inventory-ai-insights-container" class="mt-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg prose prose-sm max-w-none hidden"></div>
+                            <div class="flex flex-col md:flex-row gap-4 items-center mb-6">
+                                <div class="flex-grow w-full md:w-auto">
+                                    <label for="inventory-select" class="block text-sm font-medium text-gray-700">Select a Product</label>
+                                    <select id="inventory-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"></select>
+                                </div>
+                            </div>
+                            <div id="inventory-chart-container" class="chart-container hidden">
+                                <canvas id="inventoryTrendChart"></canvas>
+                            </div>
                         </div>
                         <div id="content-cost_structure" class="tab-content">
                             <h3 class="text-xl font-semibold mb-1 text-gray-800">YTD Overall Cost Structure</h3>
@@ -364,9 +392,106 @@
             </section>
         </main>
         
+        <!-- ... existing code for footer, modals, etc. ... -->
         <footer class="text-center mt-12 py-4 border-t border-gray-300">
-            <p class="text-sm text-gray-500">Powered by Gemini 2.5 Pro & Firebase</p>
+            <p class="text-sm text-gray-500">Powered by Gemini & Firebase</p>
         </footer>
+
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Financial Targets & Settings</h3>
+                        <div class="mt-4 space-y-4">
+                            <div>
+                                <label for="setting-annual-profit" class="block text-sm font-medium text-gray-700">Annual Net Profit Target (R)</label>
+                                <input type="number" id="setting-annual-profit" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2 border" placeholder="e.g. 25000000">
+                            </div>
+                            <div>
+                                <label for="setting-profit-margin" class="block text-sm font-medium text-gray-700">Net Profit Margin Target (%)</label>
+                                <input type="number" id="setting-profit-margin" step="0.01" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2 border" placeholder="e.g. 10.5">
+                            </div>
+                            <div>
+                                <label for="setting-material-cost" class="block text-sm font-medium text-gray-700">Material Cost Max Percentage (%)</label>
+                                <input type="number" id="setting-material-cost" step="0.01" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2 border" placeholder="e.g. 53.0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button type="button" id="save-settings-btn" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
+                            Save Changes
+                        </button>
+                        <button type="button" id="close-settings-btn" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Staging/Review Modal -->
+        <div id="staging-modal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-indigo-100 sm:mx-0 sm:h-10 sm:w-10">
+                                <svg class="h-6 w-6 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900">Review Extracted Data</h3>
+                                <div class="mt-2">
+                                    <p class="text-sm text-gray-500 mb-4">The AI has analyzed your documents. Please review the extracted figures for the latest month found. You can edit these fields before saving.</p>
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-500 uppercase">Month Detected</label>
+                                            <input type="text" id="review-month" class="mt-1 block w-full border-gray-300 rounded shadow-sm text-sm p-1 font-semibold text-gray-800">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-500 uppercase">Revenue</label>
+                                            <input type="number" step="0.01" id="review-revenue" class="mt-1 block w-full border-gray-300 rounded shadow-sm text-sm p-1">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-500 uppercase">Cost of Sales</label>
+                                            <input type="number" step="0.01" id="review-cos" class="mt-1 block w-full border-gray-300 rounded shadow-sm text-sm p-1">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-500 uppercase">Other Expenses</label>
+                                            <input type="number" step="0.01" id="review-opex" class="mt-1 block w-full border-gray-300 rounded shadow-sm text-sm p-1">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-500 uppercase">Net Profit</label>
+                                            <input type="number" step="0.01" id="review-profit" class="mt-1 block w-full border-gray-300 rounded shadow-sm text-sm p-1">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-500 uppercase">Material Costs</label>
+                                            <input type="number" step="0.01" id="review-material" class="mt-1 block w-full border-gray-300 rounded shadow-sm text-sm p-1">
+                                        </div>
+                                    </div>
+                                    <p class="text-xs text-gray-400 mt-2 italic">* Detailed breakdowns and product data will also be saved but are hidden for brevity.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button type="button" id="commit-data-btn" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
+                            Commit to Dashboard
+                        </button>
+                        <button type="button" id="cancel-stage-btn" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-red-700 hover:bg-red-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                            Discard Analysis
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Chatbot UI -->
         <div id="chatbot-container">
@@ -391,7 +516,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot, deleteDoc, collection, addDoc, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
         // --- DOM ELEMENT REFERENCES ---
         const dropZone = document.getElementById('drop-zone');
@@ -411,6 +537,7 @@
         const tabContentContainer = document.getElementById('tab-content-container');
         const viewYtdBtn = document.getElementById('view-ytd-btn');
         const viewAllBtn = document.getElementById('view-all-btn');
+        const viewCompareBtn = document.getElementById('view-compare-btn');
         const dashboardTitle = document.getElementById('dashboard-title');
         const chatbotToggle = document.getElementById('chatbot-toggle');
         const chatbotWindow = document.getElementById('chatbot-window');
@@ -420,27 +547,79 @@
         const productSelect = document.getElementById('product-select');
         const productChartContainer = document.getElementById('product-chart-container');
         const productAiInsightsContainer = document.getElementById('product-ai-insights-container');
+        const inventorySelect = document.getElementById('inventory-select');
+        const inventoryChartContainer = document.getElementById('inventory-chart-container');
+        const inventoryAiInsightsContainer = document.getElementById('inventory-ai-insights-container');
+        const catalogueSection = document.getElementById('catalogue-section');
+        const catalogueFileList = document.getElementById('catalogue-file-list');
+        const chartTitleLeft = document.getElementById('chart-title-left');
+        const chartTitleRight = document.getElementById('chart-title-right');
+        
+        // Settings Modal Refs
+        const openSettingsBtn = document.getElementById('open-settings-btn');
+        const settingsModal = document.getElementById('settings-modal');
+        const closeSettingsBtn = document.getElementById('close-settings-btn');
+        const saveSettingsBtn = document.getElementById('save-settings-btn');
+        const inputAnnualProfit = document.getElementById('setting-annual-profit');
+        const inputProfitMargin = document.getElementById('setting-profit-margin');
+        const inputMaterialCost = document.getElementById('setting-material-cost');
+
+        // Staging Modal Refs
+        const stagingModal = document.getElementById('staging-modal');
+        const commitDataBtn = document.getElementById('commit-data-btn');
+        const cancelStageBtn = document.getElementById('cancel-stage-btn');
+        const reviewMonth = document.getElementById('review-month');
+        const reviewRevenue = document.getElementById('review-revenue');
+        const reviewCos = document.getElementById('review-cos');
+        const reviewOpex = document.getElementById('review-opex');
+        const reviewProfit = document.getElementById('review-profit');
+        const reviewMaterial = document.getElementById('review-material');
 
         // --- STATE MANAGEMENT ---
         let uploadedFiles = [];
-        let db, auth;
+        let db, auth, storage;
         let chartInstances = {};
         let currentData = null;
+        let stagedAnalysisData = null; // Holds data pending review
         let currentViewMode = 'ytd';
+        let fileCatalogue = [];
+        let unsubscribeDashboard = null;
+        let unsubscribeCatalogue = null;
         
-        // --- FINANCIAL TARGETS & HISTORICAL DATA ---
-        const targets = { 
+        // --- DEFAULT TARGETS ---
+        let targets = { 
             annualProfit: 25475359.75, 
             profitMargin: 10.11,
             materialCostPercentage: 53.00
         };
+        
+        const historicalInventoryData = [
+            { "month": "March 2024", "products": [ { "rangeName": "35mm", "value": 1836484.24 }, { "rangeName": "ALLUSION", "value": 1195796.04 }, { "rangeName": "APEX", "value": 2356123.19 }, { "rangeName": "BAM", "value": 1223614.88 }, { "rangeName": "CELL", "value": 1200452.55 }, { "rangeName": "CUR", "value": 6342436.11 }, { "rangeName": "MOT", "value": 3098664.53 }, { "rangeName": "OUT", "value": 8160367.28 }, { "rangeName": "PACK", "value": 454341.41 }, { "rangeName": "RET", "value": 2049698.94 }, { "rangeName": "RIPPLE", "value": 693473.70 }, { "rangeName": "ROL", "value": 22832590.98 }, { "rangeName": "ROM", "value": 263732.71 }, { "rangeName": "SAMBRO", "value": 10835.90 }, { "rangeName": "SAMCOR", "value": 97205.15 }, { "rangeName": "SAMDES", "value": 52760.56 }, { "rangeName": "SAMDIS", "value": 353433.68 }, { "rangeName": "SAMELE", "value": 347735.01 }, { "rangeName": "SAMOUT", "value": 0 }, { "rangeName": "SAMPRI", "value": 68435.49 }, { "rangeName": "SAMRIP", "value": 0 }, { "rangeName": "SAMSTA", "value": 76698.21 }, { "rangeName": "SAMVEN", "value": 0 }, { "rangeName": "SHUT", "value": 4453985.47 }, { "rangeName": "SLIDE", "value": 107697.74 }, { "rangeName": "VAL", "value": 820303.72 }, { "rangeName": "VERT", "value": 681456.81 }, { "rangeName": "WV", "value": 7545120.51 } ] },
+            { "month": "April 2024", "products": [ { "rangeName": "35mm", "value": 1671985.51 }, { "rangeName": "ALLUSION", "value": 1108175.14 }, { "rangeName": "APEX", "value": 2248771.17 }, { "rangeName": "BAM", "value": 1099127.92 }, { "rangeName": "CELL", "value": 1218496.53 }, { "rangeName": "CUR", "value": 6156729.30 }, { "rangeName": "MOT", "value": 2626538.00 }, { "rangeName": "OUT", "value": 8007027.13 }, { "rangeName": "PACK", "value": 392220.09 }, { "rangeName": "RET", "value": 1893615.87 }, { "rangeName": "RIPPLE", "value": 664831.89 }, { "rangeName": "ROL", "value": 20281151.50 }, { "rangeName": "ROM", "value": 316164.98 }, { "rangeName": "SAMBRO", "value": 11095.49 }, { "rangeName": "SAMCOR", "value": 76884.23 }, { "rangeName": "SAMDES", "value": 35877.18 }, { "rangeName": "SAMDIS", "value": 299655.44 }, { "rangeName": "SAMELE", "value": 194797.75 }, { "rangeName": "SAMOUT", "value": 0 }, { "rangeName": "SAMPRI", "value": 64188.59 }, { "rangeName": "SAMRIP", "value": 0 }, { "rangeName": "SAMSTA", "value": 59417.52 }, { "rangeName": "SAMVEN", "value": 0 }, { "rangeName": "SHUT", "value": 4245144.82 }, { "rangeName": "SLIDE", "value": 100856.96 }, { "rangeName": "VAL", "value": 805621.20 }, { "rangeName": "VERT", "value": 693637.73 }, { "rangeName": "WV", "value": 6640738.14 } ] },
+            { "month": "May 2024", "products": [ { "rangeName": "35mm", "value": 1543262.13 }, { "rangeName": "ALLUSION", "value": 1023916.25 }, { "rangeName": "APEX", "value": 2204369.10 }, { "rangeName": "BAM", "value": 1078336.94 }, { "rangeName": "CELL", "value": 1158966.32 }, { "rangeName": "CUR", "value": 5989560.31 }, { "rangeName": "MOT", "value": 2703448.84 }, { "rangeName": "OUT", "value": 7661117.92 }, { "rangeName": "PACK", "value": 374356.10 }, { "rangeName": "RET", "value": 1853681.37 }, { "rangeName": "RIPPLE", "value": 662377.17 }, { "rangeName": "ROL", "value": 21171448.50 }, { "rangeName": "ROM", "value": 287993.53 }, { "rangeName": "SAMBRO", "value": 7436.19 }, { "rangeName": "SAMCOR", "value": 72976.86 }, { "rangeName": "SAMDES", "value": 35877.18 }, { "rangeName": "SAMDIS", "value": 294954.55 }, { "rangeName": "SAMELE", "value": 189197.58 }, { "rangeName": "SAMOUT", "value": 0 }, { "rangeName": "SAMPRI", "value": 63935.61 }, { "rangeName": "SAMRIP", "value": 0 }, { "rangeName": "SAMSTA", "value": 86097.68 }, { "rangeName": "SAMVEN", "value": 0 }, { "rangeName": "SHUT", "value": 3994557.90 }, { "rangeName": "SLIDE", "value": 96556.56 }, { "rangeName": "VAL", "value": 775400.51 }, { "rangeName": "VERT", "value": 861097.40 }, { "rangeName": "WV", "value": 6732391.39 } ] },
+            { "month": "June 2024", "products": [ { "rangeName": "35mm", "value": 1388620.25 }, { "rangeName": "ALLUSION", "value": 995989.53 }, { "rangeName": "APEX", "value": 2176436.35 }, { "rangeName": "BAM", "value": 1043506.81 }, { "rangeName": "CELL", "value": 1316778.19 }, { "rangeName": "CUR", "value": 5787154.17 }, { "rangeName": "MOT", "value": 2707028.45 }, { "rangeName": "OUT", "value": 7238394.05 }, { "rangeName": "PACK", "value": 349197.50 }, { "rangeName": "RET", "value": 1691745.47 }, { "rangeName": "RIPPLE", "value": 737949.33 }, { "rangeName": "ROL", "value": 21000989.20 }, { "rangeName": "ROM", "value": 251259.22 }, { "rangeName": "SAMBRO", "value": 30677.05 }, { "rangeName": "SAMCOR", "value": 79596.83 }, { "rangeName": "SAMDES", "value": 21104.22 }, { "rangeName": "SAMDIS", "value": 291667.75 }, { "rangeName": "SAMELE", "value": 167950.87 }, { "rangeName": "SAMOUT", "value": 0 }, { "rangeName": "SAMPRI", "value": 65419.70 }, { "rangeName": "SAMRIP", "value": 0 }, { "rangeName": "SAMSTA", "value": 98383.31 }, { "rangeName": "SAMVEN", "value": 0 }, { "rangeName": "SHUT", "value": 3739614.91 }, { "rangeName": "SLIDE", "value": 88416.68 }, { "rangeName": "VAL", "value": 733953.39 }, { "rangeName": "VERT", "value": 845602.60 }, { "rangeName": "WV", "value": 7158409.14 } ] },
+            { "month": "July 2024", "products": [ { "rangeName": "35mm", "value": 1448150.10 }, { "rangeName": "ALLUSION", "value": 959496.17 }, { "rangeName": "APEX", "value": 2243818.44 }, { "rangeName": "BAM", "value": 1047095.75 }, { "rangeName": "CELL", "value": 1395561.98 }, { "rangeName": "CUR", "value": 6441107.43 }, { "rangeName": "MOT", "value": 2646928.05 }, { "rangeName": "OUT", "value": 6715034.06 }, { "rangeName": "PACK", "value": 327924.80 }, { "rangeName": "RET", "value": 2117978.34 }, { "rangeName": "RIPPLE", "value": 656040.91 }, { "rangeName": "ROL", "value": 24053002.20 }, { "rangeName": "ROM", "value": 385630.78 }, { "rangeName": "SAMBRO", "value": 30272.98 }, { "rangeName": "SAMCOR", "value": 63931.36 }, { "rangeName": "SAMDES", "value": 16883.38 }, { "rangeName": "SAMDIS", "value": 253551.16 }, { "rangeName": "SAMELE", "value": 143288.14 }, { "rangeName": "SAMOUT", "value": 0 }, { "rangeName": "SAMPRI", "value": 11955.65 }, { "rangeName": "SAMRIP", "value": 0 }, { "rangeName": "SAMSTA", "value": 94672.26 }, { "rangeName": "SAMVEN", "value": 0 }, { "rangeName": "SHUT", "value": 3610145.55 }, { "rangeName": "SLIDE", "value": 85368.77 }, { "rangeName": "VAL", "value": 768119.85 }, { "rangeName": "VERT", "value": 818147.17 }, { "rangeName": "WV", "value": 6949338.21 } ] },
+            { "month": "August 2024", "products": [ { "rangeName": "35mm", "value": 1304345.72 }, { "rangeName": "ALLUSION", "value": 1138702.55 }, { "rangeName": "APEX", "value": 2656058.77 }, { "rangeName": "BAM", "value": 1023369.69 }, { "rangeName": "CELL", "value": 1343537.72 }, { "rangeName": "CUR", "value": 6142682.51 }, { "rangeName": "MOT", "value": 3051934.11 }, { "rangeName": "OUT", "value": 7807432.90 }, { "rangeName": "PACK", "value": 342808.12 }, { "rangeName": "RET", "value": 1960049.38 }, { "rangeName": "RIPPLE", "value": 659060.14 }, { "rangeName": "ROL", "value": 26062775.00 }, { "rangeName": "ROM", "value": 337550.99 }, { "rangeName": "SAMBRO", "value": 25270.72 }, { "rangeName": "SAMCOR", "value": 55407.30 }, { "rangeName": "SAMDES", "value": 4220.84 }, { "rangeName": "SAMDIS", "value": 205430.69 }, { "rangeName": "SAMELE", "value": 133875.13 }, { "rangeName": "SAMOUT", "value": 4590.40 }, { "rangeName": "SAMPRI", "value": 106592.00 }, { "rangeName": "SAMRIP", "value": 0 }, { "rangeName": "SAMSTA", "value": 103615.57 }, { "rangeName": "SAMVEN", "value": 0 }, { "rangeName": "SHUT", "value": 3474489.80 }, { "rangeName": "SLIDE", "value": 84079.49 }, { "rangeName": "VAL", "value": 732560.15 }, { "rangeName": "VERT", "value": 1000062.58 }, { "rangeName": "WV", "value": 6237036.80 } ] },
+            { "month": "September 2024", "products": [ { "rangeName": "35mm", "value": 1571387.48 }, { "rangeName": "ALLUSION", "value": 1112965.39 }, { "rangeName": "APEX", "value": 2661720.35 }, { "rangeName": "BAM", "value": 968227.28 }, { "rangeName": "CELL", "value": 1304327.68 }, { "rangeName": "CUR", "value": 6070924.06 }, { "rangeName": "MOT", "value": 3209346.82 }, { "rangeName": "OUT", "value": 7218484.29 }, { "rangeName": "PACK", "value": 471982.13 }, { "rangeName": "RET", "value": 1979744.32 }, { "rangeName": "RIPPLE", "value": 572571.54 }, { "rangeName": "ROL", "value": 30000361.78 }, { "rangeName": "ROM", "value": 317027.31 }, { "rangeName": "SAMBRO", "value": 22947.81 }, { "rangeName": "SAMCOR", "value": 48488.34 }, { "rangeName": "SAMDES", "value": 0 }, { "rangeName": "SAMDIS", "value": 232013.58 }, { "rangeName": "SAMELE", "value": 105225.04 }, { "rangeName": "SAMOUT", "value": 55045.41 }, { "rangeName": "SAMPRI", "value": 0 }, { "rangeName": "SAMSTA", "value": 93875.90 }, { "rangeName": "SAMVEN", "value": 0 }, { "rangeName": "SHUT", "value": 3629434.68 }, { "rangeName": "SLIDE", "value": 80320.61 }, { "rangeName": "VAL", "value": 823428.08 }, { "rangeName": "VERT", "value": 972184.72 }, { "rangeName": "WV", "value": 6519165.86 } ] },
+            { "month": "October 2024", "products": [ { "rangeName": "35mm", "value": 1410131.70 }, { "rangeName": "ALLUSION", "value": 1085308.11 }, { "rangeName": "APEX", "value": 2674938.35 }, { "rangeName": "BAM", "value": 1083903.12 }, { "rangeName": "CELL", "value": 1182171.36 }, { "rangeName": "CUR", "value": 5745062.60 }, { "rangeName": "MOT", "value": 3305023.15 }, { "rangeName": "OUT", "value": 8382935.25 }, { "rangeName": "PACK", "value": 497223.97 }, { "rangeName": "RET", "value": 1983647.69 }, { "rangeName": "RIPPLE", "value": 620861.65 }, { "rangeName": "ROL", "value": 30378551.80 }, { "rangeName": "ROM", "value": 285170.84 }, { "rangeName": "SAMBRO", "value": 20595.44 }, { "rangeName": "SAMCOR", "value": 80368.58 }, { "rangeName": "SAMDES", "value": 0 }, { "rangeName": "SAMDIS", "value": 178458.53 }, { "rangeName": "SAMELE", "value": 88743.92 }, { "rangeName": "SAMOUT", "value": 60369.18 }, { "rangeName": "SAMPRI", "value": 0 }, { "rangeName": "SAMSTA", "value": 82044.32 }, { "rangeName": "SAMVEN", "value": 0 }, { "rangeName": "SHUT", "value": 3275069.91 }, { "rangeName": "SLIDE", "value": 81403.29 }, { "rangeName": "VAL", "value": 793661.61 }, { "rangeName": "VERT", "value": 974891.09 }, { "rangeName": "WV", "value": 6896735.51 } ] },
+            { "month": "November 2024", "products": [ { "rangeName": "35mm", "value": 1231101.56 }, { "rangeName": "ALLUSION", "value": 1115087.86 }, { "rangeName": "APEX", "value": 2399921.74 }, { "rangeName": "BAM", "value": 964755.53 }, { "rangeName": "CELL", "value": 1185151.23 }, { "rangeName": "CUR", "value": 5427288.45 }, { "rangeName": "MOT", "value": 2355402.48 }, { "rangeName": "OUT", "value": 8822088.36 }, { "rangeName": "PACK", "value": 469550.48 }, { "rangeName": "RET", "value": 1831807.65 }, { "rangeName": "RIPPLE", "value": 651143.50 }, { "rangeName": "ROL", "value": 22552270.41 }, { "rangeName": "ROM", "value": 339828.97 }, { "rangeName": "SAMBRO", "value": 13313.09 }, { "rangeName": "SAMCOR", "value": 80451.85 }, { "rangeName": "SAMDES", "value": 0 }, { "rangeName": "SAMDIS", "value": 142898.67 }, { "rangeName": "SAMELE", "value": 78686.20 }, { "rangeName": "SAMOUT", "value": 47705.03 }, { "rangeName": "SAMPRI", "value": 0 }, { "rangeName": "SAMSTA", "value": 80145.53 }, { "rangeName": "SAMVEN", "value": 0 }, { "rangeName": "SHUT", "value": 4347700.91 }, { "rangeName": "SLIDE", "value": 65960.43 }, { "rangeName": "VAL", "value": 787110.06 }, { "rangeName": "VERT", "value": 918634.59 }, { "rangeName": "WV", "value": 6566603.18 } ] },
+            { "month": "December 2024", "products": [ { "rangeName": "35mm", "value": 1885685.23 }, { "rangeName": "ALLUSION", "value": 1208724.26 }, { "rangeName": "APEX", "value": 2250907.05 }, { "rangeName": "BAM", "value": 927331.25 }, { "rangeName": "CELL", "value": 1066798.10 }, { "rangeName": "CUR", "value": 5313679.95 }, { "rangeName": "MOT", "value": 2686837.06 }, { "rangeName": "OUT", "value": 8637376.96 }, { "rangeName": "PACK", "value": 279671.56 }, { "rangeName": "RET", "value": 2034720.44 }, { "rangeName": "RIPPLE", "value": 621769.75 }, { "rangeName": "ROL", "value": 26067101.45 }, { "rangeName": "ROM", "value": 265740.46 }, { "rangeName": "SAMBRO", "value": 12731.85 }, { "rangeName": "SAMCOR", "value": 78787.91 }, { "rangeName": "SAMDES", "value": 28980.00 }, { "rangeName": "SAMDIS", "value": 142189.47 }, { "rangeName": "SAMELE", "value": 214093.09 }, { "rangeName": "SAMOUT", "value": 14012.50 }, { "rangeName": "SAMPRI", "value": 46557.15 }, { "rangeName": "SAMRIP", "value": 10922.49 }, { "rangeName": "SAMSTA", "value": 71518.94 }, { "rangeName": "SAMVEN", "value": 7845.88 }, { "rangeName": "SHUT", "value": 4117420.96 }, { "rangeName": "SLIDE", "value": 65238.60 }, { "rangeName": "VAL", "value": 712731.89 }, { "rangeName": "VERT", "value": 833665.92 }, { "rangeName": "WV", "value": 6385255.62 } ] },
+            { "month": "January 2025", "products": [ { "rangeName": "35mm", "value": 2086287.20 }, { "rangeName": "ALLUSION", "value": 1248693.41 }, { "rangeName": "APEX", "value": 2534626.30 }, { "rangeName": "BAM", "value": 658444.87 }, { "rangeName": "CELL", "value": 989188.98 }, { "rangeName": "CUR", "value": 6082257.63 }, { "rangeName": "MOT", "value": 2743965.24 }, { "rangeName": "OUT", "value": 8768984.18 }, { "rangeName": "PACK", "value": 487959.66 }, { "rangeName": "RET", "value": 2052222.08 }, { "rangeName": "RIPPLE", "value": 773148.39 }, { "rangeName": "ROL", "value": 25411221.75 }, { "rangeName": "ROM", "value": 245415.33 }, { "rangeName": "SAMBRO", "value": 12731.85 }, { "rangeName": "SAMCOR", "value": 56319.33 }, { "rangeName": "SAMDES", "value": 73044.73 }, { "rangeName": "SAMDIS", "value": 140265.27 }, { "rangeName": "SAMELE", "value": 199364.10 }, { "rangeName": "SAMOUT", "value": 25225.20 }, { "rangeName": "SAMPRI", "value": 46012.02 }, { "rangeName": "SAMRIP", "value": 7888.47 }, { "rangeName": "SAMSTA", "value": 79278.70 }, { "rangeName": "SAMVEN", "value": 125505.36 }, { "rangeName": "SHUT", "value": 3769824.09 }, { "rangeName": "SLIDE", "value": 69350.16 }, { "rangeName": "VAL", "value": 805621.20 }, { "rangeName": "VERT", "value": 918379.73 }, { "rangeName": "WV", "value": 6712195.86 } ] },
+            { "month": "February 2025", "products": [ { "rangeName": "35mm", "value": 1959725.24 }, { "rangeName": "ALLUSION", "value": 1521546.93 }, { "rangeName": "APEX", "value": 2534626.30 }, { "rangeName": "BAM", "value": 601079.82 }, { "rangeName": "CELL", "value": 1155097.54 }, { "rangeName": "CUR", "value": 5823544.36 }, { "rangeName": "MOT", "value": 2783920.34 }, { "rangeName": "OUT", "value": 8796441.54 }, { "rangeName": "PACK", "value": 389494.46 }, { "rangeName": "RET", "value": 1956434.40 }, { "rangeName": "RIPPLE", "value": 766282.59 }, { "rangeName": "ROL", "value": 27816640.65 }, { "rangeName": "ROM", "value": 219292.11 }, { "rangeName": "SAMBRO", "value": 6863.06 }, { "rangeName": "SAMCOR", "value": 43537.81 }, { "rangeName": "SAMDES", "value": 68391.93 }, { "rangeName": "SAMDIS", "value": 138850.79 }, { "rangeName": "SAMELE", "value": 42272.56 }, { "rangeName": "SAMOUT", "value": 159477.00 }, { "rangeName": "SAMPRI", "value": 11955.65 }, { "rangeName": "SAMRIP", "value": 3337.43 }, { "rangeName": "SAMSTA", "value": 80476.19 }, { "rangeName": "SAMVEN", "value": 101239.26 }, { "rangeName": "SHUT", "value": 4104724.67 }, { "rangeName": "SLIDE", "value": 81710.52 }, { "rangeName": "VAL", "value": 683040.34 }, { "rangeName": "VERT", "value": 956028.98 }, { "rangeName": "WV", "value": 7628317.43 } ] },
+            { "month": "March 2025", "products": [ { "rangeName": "35mm", "value": 1804087.85 }, { "rangeName": "ALLUSION", "value": 1421697.01 }, { "rangeName": "APEX", "value": 2721095.31 }, { "rangeName": "BAM", "value": 575306.26 }, { "rangeName": "CELL", "value": 1110190.03 }, { "rangeName": "CUR", "value": 5490640.36 }, { "rangeName": "MOT", "value": 2494036.62 }, { "rangeName": "OUT", "value": 8964458.82 }, { "rangeName": "PACK", "value": 305208.36 }, { "rangeName": "RET", "value": 1852565.26 }, { "rangeName": "RIPPLE", "value": 703663.40 }, { "rangeName": "ROL", "value": 27151523.52 }, { "rangeName": "ROM", "value": 294016.64 }, { "rangeName": "SAMBRO", "value": 3714.90 }, { "rangeName": "SAMCOR", "value": 27183.84 }, { "rangeName": "SAMDES", "value": 137218.10 }, { "rangeName": "SAMDIS", "value": 159696.19 }, { "rangeName": "SAMELE", "value": 107106.64 }, { "rangeName": "SAMOUT", "value": 113420.00 }, { "rangeName": "SAMPRI", "value": 0 }, { "rangeName": "SAMRIP", "value": 0 }, { "rangeName": "SAMSTA", "value": 74749.24 }, { "rangeName": "SAMVEN", "value": 99059.19 }, { "rangeName": "SHUT", "value": 4607786.99 }, { "rangeName": "SLIDE", "value": 163900.73 }, { "rangeName": "VAL", "value": 641402.31 }, { "rangeName": "VERT", "value": 907608.29 }, { "rangeName": "WV", "value": 6899865.96 } ] },
+            { "month": "April 2025", "products": [ { "rangeName": "35mm", "value": 1720450.95 }, { "rangeName": "ALLUSION", "value": 1655885.52 }, { "rangeName": "APEX", "value": 2911206.74 }, { "rangeName": "BAM", "value": 560104.11 }, { "rangeName": "CELL", "value": 1376767.29 }, { "rangeName": "CUR", "value": 5268680.85 }, { "rangeName": "MOT", "value": 2973713.13 }, { "rangeName": "OUT", "value": 8217586.68 }, { "rangeName": "PACK", "value": 341784.68 }, { "rangeName": "RET", "value": 1787279.38 }, { "rangeName": "RIPPLE", "value": 796375.71 }, { "rangeName": "ROL", "value": 28046285.90 }, { "rangeName": "ROM", "value": 283657.93 }, { "rangeName": "SAMBRO", "value": 2102.51 }, { "rangeName": "SAMCOR", "value": 19985.10 }, { "rangeName": "SAMDES", "value": 156657.42 }, { "rangeName": "SAMDIS", "value": 117757.99 }, { "rangeName": "SAMELE", "value": 304759.42 }, { "rangeName": "SAMOUT", "value": 17369.01 }, { "rangeName": "SAMPRI", "value": 100215.00 }, { "rangeName": "SAMRIP", "value": 48783.00 }, { "rangeName": "SAMSTA", "value": 67137.13 }, { "rangeName": "SAMVEN", "value": 96302.35 }, { "rangeName": "SHUT", "value": 4330515.67 }, { "rangeName": "SLIDE", "value": 156877.86 }, { "rangeName": "VAL", "value": 626619.76 }, { "rangeName": "VERT", "value": 956028.98 }, { "rangeName": "WV", "value": 70071328.30 } ] },
+            { "month": "May 2025", "products": [ { "rangeName": "35mm", "value": 1712310.58 }, { "rangeName": "ALLUSION", "value": 1503698.44 }, { "rangeName": "APEX", "value": 3025668.31 }, { "rangeName": "BAM", "value": 586533.80 }, { "rangeName": "CELL", "value": 1345301.85 }, { "rangeName": "CUR", "value": 5477100.02 }, { "rangeName": "MOT", "value": 2612660.25 }, { "rangeName": "OUT", "value": 8891940.23 }, { "rangeName": "PACK", "value": 431239.89 }, { "rangeName": "RET", "value": 1976188.97 }, { "rangeName": "RIPPLE", "value": 954671.65 }, { "rangeName": "ROL", "value": 30179567.70 }, { "rangeName": "ROM", "value": 309019.69 }, { "rangeName": "SAMBRO", "value": 5653.85 }, { "rangeName": "SAMCOR", "value": 37591.45 }, { "rangeName": "SAMDES", "value": 153038.15 }, { "rangeName": "SAMDIS", "value": 122610.95 }, { "rangeName": "SAMELE", "value": 177422.09 }, { "rangeName": "SAMOUT", "value": 104010.00 }, { "rangeName": "SAMPRI", "value": 0 }, { "rangeName": "SAMRIP", "value": 61509.00 }, { "rangeName": "SAMSTA", "value": 63016.49 }, { "rangeName": "SAMVEN", "value": 79639.74 }, { "rangeName": "SHUT", "value": 4218030.83 }, { "rangeName": "SLIDE", "value": 167073.82 }, { "rangeName": "VAL", "value": 754343.91 }, { "rangeName": "VERT", "value": 1050817.19 }, { "rangeName": "WV", "value": 73558117.20 } ] },
+            { "month": "June 2025", "products": [ { "rangeName": "35mm", "value": 1533144.56 }, { "rangeName": "ALLUSION", "value": 1540208.55 }, { "rangeName": "APEX", "value": 3001384.98 }, { "rangeName": "BAM", "value": 588501.13 }, { "rangeName": "CELL", "value": 1313883.29 }, { "rangeName": "CUR", "value": 5264528.30 }, { "rangeName": "MOT", "value": 2742806.76 }, { "rangeName": "OUT", "value": 8264805.72 }, { "rangeName": "PACK", "value": 333904.67 }, { "rangeName": "RET", "value": 1910329.40 }, { "rangeName": "RIPPLE", "value": 1009818.48 }, { "rangeName": "ROL", "value": 30495101.70 }, { "rangeName": "ROM", "value": 285170.84 }, { "rangeName": "SAMBRO", "value": 547.24 }, { "rangeName": "SAMCOR", "value": 25148.16 }, { "rangeName": "SAMDES", "value": 146338.45 }, { "rangeName": "SAMDIS", "value": 84286.37 }, { "rangeName": "SAMELE", "value": 301031.17 }, { "rangeName": "SAMOUT", "value": 17441.21 }, { "rangeName": "SAMPRI", "value": 104010.00 }, { "rangeName": "SAMRIP", "value": 82113.00 }, { "rangeName": "SAMSTA", "value": 56542.69 }, { "rangeName": "SAMVEN", "value": 66567.10 }, { "rangeName": "SHUT", "value": 4482464.39 }, { "rangeName": "SLIDE", "value": 187009.77 }, { "rangeName": "VAL", "value": 740266.36 }, { "rangeName": "VERT", "value": 1103465.51 }, { "rangeName": "WV", "value": 72539525.80 } ] },
+            { "month": "July 2025", "products": [ { "rangeName": "35mm", "value": 1817688.92 }, { "rangeName": "ALLUSION", "value": 1764779.00 }, { "rangeName": "APEX", "value": 2986606.31 }, { "rangeName": "BAM", "value": 539261.89 }, { "rangeName": "CELL", "value": 1400657.41 }, { "rangeName": "CUR", "value": 5543199.34 }, { "rangeName": "MOT", "value": 2723698.27 }, { "rangeName": "OUT", "value": 7716224.26 }, { "rangeName": "PACK", "value": 423611.15 }, { "rangeName": "RET", "value": 2251877.18 }, { "rangeName": "RIPPLE", "value": 1079732.30 }, { "rangeName": "ROL", "value": 31080122.50 }, { "rangeName": "ROM", "value": 355824.73 }, { "rangeName": "SAMBRO", "value": 27.40 }, { "rangeName": "SAMCOR", "value": 23944.52 }, { "rangeName": "SAMDES", "value": 143325.52 }, { "rangeName": "SAMDIS", "value": 176524.32 }, { "rangeName": "SAMELE", "value": 332675.73 }, { "rangeName": "SAMOUT", "value": 23003.32 }, { "rangeName": "SAMPRI", "value": 91857.00 }, { "rangeName": "SAMRIP", "value": 82113.00 }, { "rangeName": "SAMSTA", "value": 57542.33 }, { "rangeName": "SAMVEN", "value": 66567.10 }, { "rangeName": "SHUT", "value": 4827749.66 }, { "rangeName": "SLIDE", "value": 185141.61 }, { "rangeName": "VAL", "value": 804058.69 }, { "rangeName": "VERT", "value": 1088815.14 }, { "rangeName": "WV", "value": 7458228.49 } ] }
+        ];
+        
         const historicalAnnualData = {
             fy2022: { netProfit: 14318675.49 },
             fy2023: { netProfit: 8624848.47 },
             fy2024: { netProfit: 11013788.22 },
             fy2025: { netProfit: 13793668.42 },
         };
-        
+
         // --- FIREBASE CONFIGURATION ---
         const firebaseConfig = {
             apiKey: "AIzaSyBnOemVRN1BeLJsu3Eys8ZQdttyex9h3Gc",
@@ -459,10 +638,13 @@
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
-                onAuthStateChanged(auth, (user) => {
+                storage = getStorage(app);
+                
+                onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         statusText.textContent = 'Authenticated. Checking for saved data...';
-                        setupRealtimeListener();
+                        await loadSettings(); // Safe to load after auth
+                        setupRealtimeListeners();
                     }
                 });
                 statusText.textContent = 'Authenticating...';
@@ -490,16 +672,14 @@
             
             analyzeButton.addEventListener('click', processFiles);
             addDataButton.addEventListener('click', () => uploadSection.classList.toggle('hidden'));
-            clearDataButton.addEventListener('click', async () => {
-                if (confirm("Are you sure you want to delete all dashboard data? This action cannot be undone.")) {
-                    await clearAllData();
-                }
-            });
+            clearDataButton.addEventListener('click', clearAllData);
             
             setupTabDragAndDrop();
 
             viewYtdBtn.addEventListener('click', () => setViewMode('ytd'));
             viewAllBtn.addEventListener('click', () => setViewMode('all'));
+            viewCompareBtn.addEventListener('click', () => setViewMode('compare'));
+            
             chatbotToggle.addEventListener('click', () => {
                 chatbotWindow.classList.toggle('hidden');
                 setTimeout(() => {
@@ -512,8 +692,197 @@
                 if (e.key === 'Enter') handleChatSubmit();
             });
             productSelect.addEventListener('change', renderProductTrendChart);
+            inventorySelect.addEventListener('change', renderInventoryTrendChart);
+
+            // Settings Handlers
+            openSettingsBtn.addEventListener('click', () => {
+                inputAnnualProfit.value = targets.annualProfit;
+                inputProfitMargin.value = targets.profitMargin;
+                inputMaterialCost.value = targets.materialCostPercentage;
+                settingsModal.classList.remove('hidden');
+            });
+            closeSettingsBtn.addEventListener('click', () => settingsModal.classList.add('hidden'));
+            saveSettingsBtn.addEventListener('click', saveSettings);
+
+            // Staging/Review Handlers
+            commitDataBtn.addEventListener('click', commitStagedData);
+            cancelStageBtn.addEventListener('click', () => {
+                stagedAnalysisData = null;
+                stagingModal.classList.add('hidden');
+                uploadedFiles = [];
+                updateFileList();
+                uploadSection.classList.remove('hidden');
+                showStatus("Analysis discarded.");
+                setTimeout(() => statusSection.classList.add('hidden'), 2000);
+            });
         }
         
+        // --- SETTINGS MANAGEMENT ---
+        async function loadSettings() {
+            try {
+                const docRef = doc(db, `artifacts/${appId}/public/data/settings`);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const savedTargets = docSnap.data();
+                    targets = { ...targets, ...savedTargets };
+                }
+            } catch (e) {
+                console.warn("Could not load settings, using defaults.", e);
+            }
+        }
+
+        async function saveSettings() {
+            const newAnnualProfit = parseFloat(inputAnnualProfit.value);
+            const newProfitMargin = parseFloat(inputProfitMargin.value);
+            const newMaterialCost = parseFloat(inputMaterialCost.value);
+
+            if (isNaN(newAnnualProfit) || isNaN(newProfitMargin) || isNaN(newMaterialCost)) {
+                alert("Please enter valid numeric values.");
+                return;
+            }
+
+            targets = {
+                annualProfit: newAnnualProfit,
+                profitMargin: newProfitMargin,
+                materialCostPercentage: newMaterialCost
+            };
+
+            try {
+                const docRef = doc(db, `artifacts/${appId}/public/data/settings`);
+                await setDoc(docRef, targets);
+                settingsModal.classList.add('hidden');
+                // Re-render dashboard with new targets if data exists
+                if (currentData) renderDashboard(currentData);
+            } catch (e) {
+                alert("Failed to save settings: " + e.message);
+            }
+        }
+
+        // --- STAGING AREA LOGIC ---
+        function showStagingArea(analysisData) {
+            stagedAnalysisData = analysisData;
+            
+            // Find the most relevant month to review (usually the last one in the array)
+            const latestMonthData = analysisData.monthlyData && analysisData.monthlyData.length > 0 
+                ? analysisData.monthlyData[analysisData.monthlyData.length - 1] 
+                : null;
+
+            if (latestMonthData) {
+                reviewMonth.value = latestMonthData.month || "Unknown";
+                reviewRevenue.value = latestMonthData.revenue || 0;
+                reviewCos.value = latestMonthData.costOfSales || latestMonthData.costOfGoodsSold || 0;
+                reviewOpex.value = latestMonthData.otherExpenses || 0;
+                reviewProfit.value = latestMonthData.netProfit || 0;
+                reviewMaterial.value = latestMonthData.materialCosts || 0;
+            } else {
+                reviewMonth.value = "No monthly data found";
+            }
+
+            // Hide loader, show modal
+            statusSection.classList.add('hidden');
+            stagingModal.classList.remove('hidden');
+        }
+
+        async function commitStagedData() {
+            if (!stagedAnalysisData) return;
+
+            // Update the specific month data in the staged object with user edits
+            const latestIndex = stagedAnalysisData.monthlyData.length - 1;
+            if (latestIndex >= 0) {
+                const editedMonth = stagedAnalysisData.monthlyData[latestIndex];
+                editedMonth.month = reviewMonth.value;
+                editedMonth.revenue = parseFloat(reviewRevenue.value);
+                editedMonth.costOfSales = parseFloat(reviewCos.value);
+                editedMonth.costOfGoodsSold = parseFloat(reviewCos.value); // Sync these
+                editedMonth.otherExpenses = parseFloat(reviewOpex.value);
+                editedMonth.netProfit = parseFloat(reviewProfit.value);
+                editedMonth.materialCosts = parseFloat(reviewMaterial.value);
+                
+                stagedAnalysisData.monthlyData[latestIndex] = editedMonth;
+            }
+
+            // Now merge with historical data (currentData) and save
+            showStatus("Merging and saving validated data...");
+            stagingModal.classList.add('hidden');
+            
+            const mergedData = mergeFinancialData(currentData, stagedAnalysisData);
+            
+            try {
+                await saveData(mergedData);
+                stagedAnalysisData = null;
+                uploadedFiles = [];
+                updateFileList();
+                uploadSection.classList.add('hidden'); // Keep upload hidden after success
+            } catch (e) {
+                showError("Failed to save data: " + e.message);
+            }
+        }
+
+        // --- CORE PROCESSING LOGIC ---
+        async function processFiles() {
+            if (uploadedFiles.length === 0) return showError("Please upload at least one PDF file.");
+            
+            showStatus(`Uploading ${uploadedFiles.length} file(s) to secure storage...`);
+            
+            try {
+                const uploadPromises = uploadedFiles.map(async (file) => {
+                    const storageRef = ref(storage, `artifacts/${appId}/documents/${file.name}`);
+                    await uploadBytes(storageRef, file);
+                    const gsUri = `gs://${firebaseConfig.storageBucket}/artifacts/${appId}/documents/${file.name}`;
+                    
+                    const docCollectionRef = collection(db, `artifacts/${appId}/public/data/documents`);
+                    await addDoc(docCollectionRef, {
+                        name: file.name,
+                        gsUri: gsUri,
+                        createdAt: new Date(),
+                    });
+                });
+
+                await Promise.all(uploadPromises);
+                
+                showStatus("Files uploaded. AI is analyzing the documents...");
+                
+                // Instead of analyzing ALL documents every time (expensive), we analyze ONLY the new files for the staging area.
+                // The "Full History" context is preserved in the Chatbot via the JSON data.
+                const fileParts = await Promise.all(uploadedFiles.map(file => new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve({ inlineData: { mimeType: file.type, data: reader.result.split(',')[1] } });
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                })));
+
+                const newAnalysis = await getFinancialAnalysis(fileParts);
+                
+                // Trigger Staging/Review instead of auto-save
+                showStagingArea(newAnalysis);
+
+            } catch (e) {
+                console.error("Processing error:", e);
+                showError(`An error occurred during processing: ${e.message}`);
+            }
+        }
+
+        // --- DATA MERGING LOGIC (Re-introduced for Staging) ---
+        function mergeFinancialData(existingData, newData) {
+            if (!existingData) return newData;
+        
+            const merged = { ...existingData };
+
+            for (const key in newData) {
+                if (Array.isArray(newData[key]) && newData[key].length > 0) {
+                    // For monthly arrays, we merge by Month Name to avoid duplicates
+                    const map = new Map((merged[key] || []).map(item => [item.month, item]));
+                    newData[key].forEach(item => map.set(item.month, item));
+                    merged[key] = Array.from(map.values()).sort((a, b) => parseMonthYear(a.month) - parseMonthYear(b.month));
+                } else if (newData[key] !== null && typeof newData[key] === 'object' && !Array.isArray(newData[key])) {
+                    merged[key] = { ...(merged[key] || {}), ...newData[key] };
+                } else if (newData[key] !== undefined) {
+                     merged[key] = newData[key];
+                }
+            }
+            return merged;
+        }
+
         function setupTabDragAndDrop() {
             let draggedTab = null;
 
@@ -589,60 +958,22 @@
             }
         }
 
-        // --- CORE PROCESSING LOGIC ---
-        async function processFiles() {
-            if (uploadedFiles.length === 0) return showError("Please upload at least one PDF file.");
-            
-            showStatus("Reading and encoding files...");
-            
-            const filePromises = uploadedFiles.map(file => new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve({ inlineData: { mimeType: file.type, data: reader.result.split(',')[1] } });
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            }));
-
-            try {
-                const fileParts = await Promise.all(filePromises);
-                showStatus("Sending documents to Gemini 2.5 Pro for analysis...");
-                const newAnalysis = await getFinancialAnalysis(fileParts);
-                
-                showStatus("Merging new data with historical records...");
-                const mergedData = mergeFinancialData(currentData, newAnalysis);
-                
-                showStatus("Analysis complete. Saving to database...");
-                await saveData(mergedData);
-                
-                uploadSection.classList.add('hidden');
-                
-            } catch (e) {
-                console.error("Processing error:", e);
-                showError(`An error occurred during processing: ${e.message}`);
-            }
-        }
-
         // --- GEMINI API INTERACTION ---
         async function getFinancialAnalysis(fileParts) {
             const prompt = `
-                You are a senior financial consultant providing a deep-dive analysis. Analyze the provided financial documents (Income Statement, Balance Sheet, and optionally a Shipments by Product report).
-                Your response MUST be a single, valid JSON object.
-                
-                The JSON object must conform to this schema:
+                You are a senior financial consultant. Analyze the provided financial documents. 
+                Your response MUST be a single, valid JSON object matching this schema:
                 {
                   "monthlyData": [ { "month": "Month Year", "revenue": 12345.67, "costOfSales": 1234.56, "costOfGoodsSold": 1234.56, "materialCosts": 900.00, "otherExpenses": 123.45, "netProfit": 12345.67 } ],
-                  "ytdTotals": { "revenue": 123456.78, "netProfit": 12345.67 },
-                  "financialPosition": { "totalAssets": 123456.78, "totalLiabilities": 12345.67, "totalEquity": 12345.67, "currentAssets": 12345.67, "currentLiabilities": 1234.56 },
                   "detailedCostOfSales": [ { "category": "Expense Name", "value": 12345.67 } ],
                   "detailedOtherExpenses": [ { "category": "Expense Name", "value": 12345.67 } ],
                   "productPerformance": [ { "month": "Month Year", "products": [ { "rangeName": "Product Name", "sales": 12345.67, "cost": 1234.56 } ] } ],
-                  "aiAnalysis": "A thorough, executive-level summary of the company's performance for the LATEST period. Structure it with these headings: Executive Summary, Key Performance Indicators (KPIs), Profitability Analysis, Financial Health (including comments on liquidity, solvency, and key ratios like Debt-to-Equity), and Actionable Recommendations.",
-                  "productPerformanceAnalysis": "A concise, high-level summary of overall product performance, highlighting any general trends, products with significant problems (persistently high cost %), and products that are performing exceptionally well. Use clear headings and bold text for emphasis. Do not include conversational filler like 'Of course, here is...'. Just provide the analysis."
+                  "inventoryData": [ { "month": "Month Year", "products": [ { "rangeName": "Product Name", "value": 12345.67 } ] } ],
+                  "aiAnalysis": "Executive summary of performance, KPIs, profitability, and recommendations.",
+                  "productPerformanceAnalysis": "Summary of product trends, problems, and high performers.",
+                  "inventoryAnalysis": "Summary of inventory health and trends."
                 }
-
-                For the "monthlyData" array, scan all provided documents and extract the data for *every single month* you find. Also extract "materialCosts", which is a component of "costOfGoodsSold". Do not limit this to a specific year.
-                For "ytdTotals", use the cumulative 'Tot Actual' or 'YTD' columns from the most recent income statement.
-                For "financialPosition", use the data from the most recent balance sheet.
-                If a product performance report is provided, extract its data into the "productPerformance" array. Each element should represent a month from the report, containing a list of all products for that month. If no product report is provided, return an empty array for "productPerformance".
+                Extract data for every month found. Ensure materialCosts is extracted separately if possible.
             `;
 
             const requestBody = {
@@ -650,8 +981,8 @@
                 generationConfig: { responseMimeType: "application/json" }
             };
             
-            const apiKey = "AIzaSyC-yMxXO1HXwrRsN4Xz71363ul5HHtgxXA"; 
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
+            const apiKey = ""; 
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent?key=${apiKey}`;
 
             const response = await fetch(apiUrl, {
                 method: 'POST',
@@ -661,8 +992,8 @@
 
             if (!response.ok) {
                  if (response.status === 403) {
-                    throw new Error("API request failed with status 403 (Forbidden). Please check that the 'Generative Language API' or 'Vertex AI API' is enabled in your Google Cloud project.");
-                }
+                     throw new Error("API request failed with status 403. Check Google Cloud API enablement.");
+                 }
                 throw new Error(`API request failed with status ${response.status}`);
             }
             const result = await response.json();
@@ -673,75 +1004,106 @@
                 throw new Error("Invalid response structure from Gemini API.");
             }
         }
-        
-        // --- DATA MERGING LOGIC ---
-        function mergeFinancialData(existingData, newData) {
-            if (!existingData) return newData;
-        
-            const merged = { ...existingData, ...newData };
-
-            if (existingData.monthlyData && newData.monthlyData) {
-                const monthlyMap = new Map(existingData.monthlyData.map(item => [item.month, item]));
-                newData.monthlyData.forEach(item => monthlyMap.set(item.month, item));
-                merged.monthlyData = Array.from(monthlyMap.values()).sort((a, b) => parseMonthYear(a.month) - parseMonthYear(b.month));
-            }
-
-            if (existingData.productPerformance && newData.productPerformance) {
-                const productMap = new Map(existingData.productPerformance.map(item => [item.month, item]));
-                newData.productPerformance.forEach(item => productMap.set(item.month, item));
-                merged.productPerformance = Array.from(productMap.values()).sort((a, b) => parseMonthYear(a.month) - parseMonthYear(b.month));
-            }
-            
-            return merged;
-        }
 
         // --- FIRESTORE DATA MANAGEMENT ---
-        async function setupRealtimeListener() {
-            const docRef = doc(db, `artifacts/${appId}/public/data/dashboard/latest`);
-            
-            onSnapshot(docRef, (docSnap) => {
+        function setupRealtimeListeners() {
+            // Unsubscribe from previous listeners if they exist to prevent multiple listeners
+            if (unsubscribeDashboard) unsubscribeDashboard();
+            if (unsubscribeCatalogue) unsubscribeCatalogue();
+
+            const dashboardDocRef = doc(db, `artifacts/${appId}/public/data/dashboard/latest`);
+            const documentsColRef = collection(db, `artifacts/${appId}/public/data/documents`);
+
+            // Listener for the main dashboard data
+            unsubscribeDashboard = onSnapshot(dashboardDocRef, (docSnap) => {
                 statusSection.classList.add('hidden');
                 if (docSnap.exists()) {
                     currentData = docSnap.data().analysis;
                     setViewMode('ytd');
                     dashboardSection.classList.remove('hidden');
                 } else {
-                    currentData = null;
-                    dashboardSection.classList.add('hidden');
+                    currentData = {
+                        inventoryData: historicalInventoryData,
+                        monthlyData: [],
+                        productPerformance: [],
+                        detailedCostOfSales: [],
+                        detailedOtherExpenses: [],
+                        aiAnalysis: "Please upload your financial documents to begin analysis.",
+                        productPerformanceAnalysis: "No product performance data available.",
+                        inventoryAnalysis: "Historical inventory data loaded. Upload financial documents for a complete analysis."
+                    };
+                    saveData(currentData);
                     uploadSection.classList.remove('hidden');
                 }
-            }, (error) => {
-                console.error("Firestore listener error:", error);
-                if (error.code === 'permission-denied') {
-                    const errorMessage = `Firestore Permission Error: The application is not allowed to access the database.
-                    \nThis is likely due to incorrect Firestore Security Rules. Please go to your Firebase Console -> Firestore Database -> Rules tab and ensure they are set to allow public access.
-                    \nThe correct rules for a public dashboard are:
-                    \nrules_version = '2';
-                    service cloud.firestore {
-                      match /databases/{database}/documents {
-                        match /artifacts/${appId}/public/data/dashboard/{document=**} {
-                          allow read, write: if request.auth != null;
-                        }
-                      }
-                    }`;
-                    showError(errorMessage);
-                } else {
-                    showError("Could not listen for data updates.");
-                }
+            });
+
+            // Listener for the document catalogue
+            unsubscribeCatalogue = onSnapshot(documentsColRef, (querySnapshot) => {
+                fileCatalogue = [];
+                querySnapshot.forEach((doc) => {
+                    fileCatalogue.push({ id: doc.id, ...doc.data() });
+                });
+                renderCatalogue(fileCatalogue);
+                catalogueSection.classList.toggle('hidden', fileCatalogue.length === 0);
+            });
+        }
+        
+        function renderCatalogue(files) {
+            catalogueFileList.innerHTML = '';
+            if (files.length === 0) {
+                catalogueFileList.innerHTML = '<p>No documents stored yet. Upload your financial PDFs to begin.</p>';
+                return;
+            }
+            files.sort((a, b) => a.name.localeCompare(b.name));
+            files.forEach(file => {
+                const fileDiv = document.createElement('div');
+                fileDiv.className = 'bg-gray-100 p-3 rounded-lg flex items-center space-x-3';
+                fileDiv.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M4 2a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V8.414a1 1 0 00-.293-.707l-4.414-4.414A1 1 0 0011.586 3H4zm3 9a1 1 0 00-1 1v1a1 1 0 001 1h8a1 1 0 001-1v-1a1 1 0 00-1-1H7z" clip-rule="evenodd" />
+                    </svg>
+                    <span class="truncate" title="${file.name}">${file.name}</span>
+                `;
+                catalogueFileList.appendChild(fileDiv);
             });
         }
 
         async function saveData(analysisData) {
             const docRef = doc(db, `artifacts/${appId}/public/data/dashboard/latest`);
-            await setDoc(docRef, { analysis: analysisData, lastUpdated: new Date() });
+            const dataToSave = { ...analysisData, historicalInventoryData }; // Ensure historical data persists
+            await setDoc(docRef, { analysis: dataToSave, lastUpdated: new Date() });
         }
         
         async function clearAllData() {
-            if (!confirm("Are you sure you want to delete all dashboard data? This action cannot be undone.")) return;
-            showStatus("Deleting all data...");
-            const docRef = doc(db, `artifacts/${appId}/public/data/dashboard/latest`);
-            await deleteDoc(docRef);
-            // The onSnapshot listener will automatically handle the UI update
+            if (!confirm("Are you sure you want to delete ALL dashboard data AND the stored PDF documents? This action cannot be undone.")) return;
+            
+            showStatus("Deleting all data from Firestore and Storage...");
+
+            try {
+                const deleteFilePromises = fileCatalogue.map(file => {
+                    const fileRef = ref(storage, file.gsUri);
+                    return deleteObject(fileRef).catch(e => console.warn("File delete failed", e)); // Ignore file not found
+                });
+                await Promise.all(deleteFilePromises);
+                
+                const batch = writeBatch(db);
+                const dashboardDocRef = doc(db, `artifacts/${appId}/public/data/dashboard/latest`);
+                batch.delete(dashboardDocRef);
+                const settingsDocRef = doc(db, `artifacts/${appId}/public/data/settings`);
+                batch.delete(settingsDocRef);
+                
+                fileCatalogue.forEach(file => {
+                    const docRef = doc(db, `artifacts/${appId}/public/data/documents`, file.id);
+                    batch.delete(docRef);
+                });
+
+                await batch.commit();
+                statusSection.classList.add('hidden'); 
+
+            } catch (error) {
+                console.error("Error clearing data:", error);
+                showError(`Failed to clear all data: ${error.message}`);
+            }
         }
 
         // --- DASHBOARD RENDERING ---
@@ -756,7 +1118,17 @@
             viewYtdBtn.classList.toggle('text-white', mode === 'ytd');
             viewAllBtn.classList.toggle('bg-indigo-600', mode === 'all');
             viewAllBtn.classList.toggle('text-white', mode === 'all');
-            if (currentData) renderDashboard(currentData);
+            viewCompareBtn.classList.toggle('bg-indigo-600', mode === 'compare');
+            viewCompareBtn.classList.toggle('text-white', mode === 'compare');
+            
+            if (!currentData) return;
+
+            if (mode === 'compare') {
+                dashboardTitle.textContent = "Dashboard & Analysis (Yearly Comparison)";
+                renderComparisonCharts(currentData);
+            } else {
+                renderDashboard(currentData);
+            }
         }
 
         // --- DATE & FINANCIAL YEAR LOGIC ---
@@ -801,49 +1173,144 @@
             const startYear = ytdDataForTitle.length > 0 ? parseMonthYear(ytdDataForTitle[0].month).getUTCFullYear() : getFinancialYearStartYear();
             
             dashboardTitle.textContent = `Dashboard & Analysis (${isYtdView ? `FY ${startYear + 1} YTD` : 'All Time'})`;
+            chartTitleLeft.textContent = "Monthly Net Profit Trend";
+            chartTitleRight.textContent = "Monthly Revenue vs. Costs";
 
             // Calculate totals for the current view
-            const totalRevenueForView = dataForView.reduce((sum, item) => sum + item.revenue, 0);
-            const totalProfitForView = dataForView.reduce((sum, item) => sum + item.netProfit, 0);
-            const totalMaterialCostsForView = dataForView.reduce((sum, item) => sum + (item.materialCosts || 0), 0);
+            const totalRevenueForView = dataForView.reduce((sum, item) => sum + (item.revenue || 0), 0);
+            const totalProfitForView = dataForView.reduce((sum, item) => sum + (item.netProfit || 0), 0);
+            const totalMaterialCostsForView = dataForView.reduce((sum, item) => {
+                const mc = (item.materialCosts && item.materialCosts !== 0) ? item.materialCosts : (item.costOfGoodsSold || 0);
+                return sum + mc;
+            }, 0);
             
             const marginForView = (totalRevenueForView > 0) ? (totalProfitForView / totalRevenueForView) * 100 : 0;
             const materialCostPercForView = (totalRevenueForView > 0) ? (totalMaterialCostsForView / totalRevenueForView) * 100 : 0;
 
-            // Update KPIs
+            // Update KPIs with targets from global variable (loaded from settings)
             document.getElementById('kpi-projected-profit').textContent = `R${calculateProjectedProfit(fullData).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             document.getElementById('kpi-ytd-profit').textContent = `R${totalProfitForView.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             document.getElementById('kpi-ytd-margin').textContent = `${marginForView.toFixed(2)}%`;
             document.getElementById('kpi-material-cost-percentage').textContent = `${materialCostPercForView.toFixed(2)}%`;
-            document.getElementById('kpi-current-ratio').textContent = (fullData.financialPosition.currentLiabilities > 0) ? (fullData.financialPosition.currentAssets / fullData.financialPosition.currentLiabilities).toFixed(2) : '0.00';
-            document.getElementById('ai-analysis').innerHTML = fullData.aiAnalysis;
+            if (fullData.financialPosition && fullData.financialPosition.currentLiabilities) {
+                document.getElementById('kpi-current-ratio').textContent = (fullData.financialPosition.currentLiabilities > 0) ? (fullData.financialPosition.currentAssets / fullData.financialPosition.currentLiabilities).toFixed(2) : '0.00';
+            }
+            document.getElementById('ai-analysis').innerHTML = fullData.aiAnalysis || "";
             
             renderHealthDashboard(fullData);
             renderKpiProgressBars(fullData, totalProfitForView, marginForView, materialCostPercForView);
 
-            const labels = dataForView.map(d => d.month);
-            
-            const avgProfit = dataForView.length > 0 ? totalProfitForView / dataForView.length : 0;
-            const avgRevenue = dataForView.length > 0 ? totalRevenueForView / dataForView.length : 0;
-            const monthlyProfitTarget = targets.annualProfit / 12;
+            if (dataForView && dataForView.length > 0) {
+                const labels = dataForView.map(d => d.month);
+                const avgProfit = dataForView.length > 0 ? totalProfitForView / dataForView.length : 0;
+                const avgRevenue = dataForView.length > 0 ? totalRevenueForView / dataForView.length : 0;
+                const monthlyProfitTarget = targets.annualProfit / 12;
 
-            chartInstances.netProfitChart = new Chart(document.getElementById('netProfitChart'), { type: 'line', data: { labels, datasets: [ { label: 'Net Profit', data: dataForView.map(d => d.netProfit), borderColor: '#4f46e5', backgroundColor: 'rgba(79, 70, 229, 0.1)', fill: true, tension: 0.3 }, { label: 'Avg. Profit', data: Array(labels.length).fill(avgProfit), borderColor: '#10b981', borderDash: [5, 5], fill: false, pointRadius: 0 }, { label: 'Target', data: Array(labels.length).fill(monthlyProfitTarget), borderColor: '#f59e0b', borderDash: [5, 5], fill: false, pointRadius: 0 } ] }, options: getChartOptions(true) });
-            chartInstances.revenueVsCostChart = new Chart(document.getElementById('revenueVsCostChart'), { type: 'bar', data: { labels, datasets: [{ label: 'Total Revenue', data: dataForView.map(d => d.revenue), backgroundColor: 'rgba(16, 185, 129, 0.7)', type: 'bar' }, { label: 'Total Costs', data: dataForView.map(d => d.costOfSales + d.otherExpenses), backgroundColor: 'rgba(239, 68, 68, 0.7)', type: 'bar' }, { label: 'Avg. Revenue', data: Array(labels.length).fill(avgRevenue), borderColor: '#3b82f6', borderDash: [5, 5], fill: false, pointRadius: 0, type: 'line' }] }, options: getChartOptions(true) });
+                chartInstances.netProfitChart = new Chart(document.getElementById('netProfitChart'), { type: 'line', data: { labels, datasets: [ { label: 'Net Profit', data: dataForView.map(d => d.netProfit), borderColor: '#4f46e5', backgroundColor: 'rgba(79, 70, 229, 0.1)', fill: true, tension: 0.3 }, { label: 'Avg. Profit', data: Array(labels.length).fill(avgProfit), borderColor: '#10b981', borderDash: [5, 5], fill: false, pointRadius: 0 }, { label: 'Target', data: Array(labels.length).fill(monthlyProfitTarget), borderColor: '#f59e0b', borderDash: [5, 5], fill: false, pointRadius: 0 } ] }, options: getChartOptions(true) });
+                chartInstances.revenueVsCostChart = new Chart(document.getElementById('revenueVsCostChart'), { type: 'bar', data: { labels, datasets: [{ label: 'Total Revenue', data: dataForView.map(d => d.revenue), backgroundColor: 'rgba(16, 185, 129, 0.7)', type: 'bar' }, { label: 'Total Costs', data: dataForView.map(d => (d.costOfSales || 0) + (d.otherExpenses || 0)), backgroundColor: 'rgba(239, 68, 68, 0.7)', type: 'bar' }, { label: 'Avg. Revenue', data: Array(labels.length).fill(avgRevenue), borderColor: '#3b82f6', borderDash: [5, 5], fill: false, pointRadius: 0, type: 'line' }] }, options: getChartOptions(true) });
+            }
             
             renderDetailedCharts(fullData);
             renderProductPerformanceTab(fullData);
+            renderInventoryPerformanceTab(fullData);
+        }
+
+        function renderComparisonCharts(fullData) {
+            destroyAllCharts();
+            errorSection.classList.add('hidden');
+            chartTitleLeft.textContent = "Year-over-Year Net Profit Comparison";
+            chartTitleRight.textContent = "Year-over-Year Revenue Comparison";
+
+            const monthLabels = ["March", "April", "May", "June", "July", "August", "September", "October", "November", "December", "January", "February"];
+            const yearDatasetsProfit = {};
+            const yearDatasetsRevenue = {};
+            
+            // Define colors for different years
+            const yearColors = {
+                2023: '#94a3b8', // gray
+                2024: '#60a5fa', // blue
+                2025: '#4f46e5', // indigo (current/main)
+                2026: '#10b981', // emerald
+                2027: '#f59e0b'  // amber
+            };
+
+            // Group data by Financial Year
+            fullData.monthlyData.forEach(item => {
+                const date = parseMonthYear(item.month);
+                if (!date) return;
+                
+                // Determine FY: Mar 2024 is FY2025 (ending Feb 2025)
+                const monthIndex = date.getUTCMonth(); // 0 = Jan
+                const calendarYear = date.getUTCFullYear();
+                const fyYear = monthIndex < 2 ? calendarYear : calendarYear + 1;
+                
+                if (!yearDatasetsProfit[fyYear]) {
+                    yearDatasetsProfit[fyYear] = new Array(12).fill(null);
+                    yearDatasetsRevenue[fyYear] = new Array(12).fill(null);
+                }
+
+                // Map month to 0-11 index starting from March
+                // Mar(2) -> 0, Apr(3) -> 1 ... Dec(11) -> 9, Jan(0) -> 10, Feb(1) -> 11
+                const chartIndex = monthIndex < 2 ? monthIndex + 10 : monthIndex - 2;
+                
+                yearDatasetsProfit[fyYear][chartIndex] = item.netProfit;
+                yearDatasetsRevenue[fyYear][chartIndex] = item.revenue;
+            });
+
+            const profitDatasets = Object.keys(yearDatasetsProfit).sort().map(year => ({
+                label: `FY ${year}`,
+                data: yearDatasetsProfit[year],
+                borderColor: yearColors[year] || '#333',
+                backgroundColor: (yearColors[year] || '#333') + '20', // add transparency
+                tension: 0.3,
+                fill: false
+            }));
+
+            const revenueDatasets = Object.keys(yearDatasetsRevenue).sort().map(year => ({
+                label: `FY ${year}`,
+                data: yearDatasetsRevenue[year],
+                backgroundColor: yearColors[year] || '#333',
+                borderRadius: 4
+            }));
+
+            // Render Net Profit Comparison (Line Chart)
+            chartInstances.netProfitChart = new Chart(document.getElementById('netProfitChart'), {
+                type: 'line',
+                data: {
+                    labels: monthLabels,
+                    datasets: profitDatasets
+                },
+                options: getChartOptions(true)
+            });
+
+            // Render Revenue Comparison (Grouped Bar Chart)
+            chartInstances.revenueVsCostChart = new Chart(document.getElementById('revenueVsCostChart'), {
+                type: 'bar',
+                data: {
+                    labels: monthLabels,
+                    datasets: revenueDatasets
+                },
+                options: getChartOptions(true)
+            });
+            
+            // Keep detailed charts rendered for context
+            renderDetailedCharts(fullData);
+            renderProductPerformanceTab(fullData);
+            renderInventoryPerformanceTab(fullData);
         }
         
         function renderHealthDashboard(data) {
-            const latestMonth = data.monthlyData[data.monthlyData.length - 1];
-            if (!latestMonth) return;
+            const latestMonth = data.monthlyData && data.monthlyData.length > 0 ? data.monthlyData[data.monthlyData.length - 1] : null;
+            if (!latestMonth) {
+                document.getElementById('latest-month-label').textContent = "N/A";
+                return;
+            }
 
             document.getElementById('latest-month-label').textContent = latestMonth.month;
 
             const avgMonthlyProfitTarget = targets.annualProfit / 12;
             const latestMonthProfitMargin = (latestMonth.revenue > 0) ? (latestMonth.netProfit / latestMonth.revenue) * 100 : 0;
             
-            // ✅ Fallback for latest month
             const latestMonthMaterialCostValue = (latestMonth.materialCosts && latestMonth.materialCosts !== 0)
                 ? latestMonth.materialCosts
                 : (latestMonth.costOfGoodsSold || 0);
@@ -854,7 +1321,6 @@
             const ytdTotalRevenue = ytdData.reduce((s, i) => s + (i.revenue || 0), 0);
             const ytdTotalProfit = ytdData.reduce((s, i) => s + (i.netProfit || 0), 0);
 
-            // ✅ Fallback for YTD
             const ytdTotalMaterialCosts = ytdData.reduce((s, i) => {
                 const mc = (i.materialCosts && i.materialCosts !== 0) ? i.materialCosts : (i.costOfGoodsSold || 0);
                 return s + mc;
@@ -887,7 +1353,7 @@
         
         function renderKpiProgressBars(fullData, profitForView, marginForView, materialCostPercForView) {
             const isYtdView = currentViewMode === 'ytd';
-            const ytdProfit = getFinancialYearData(fullData.monthlyData).reduce((sum, item) => sum + item.netProfit, 0);
+            const ytdProfit = getFinancialYearData(fullData.monthlyData).reduce((sum, item) => sum + (item.netProfit || 0), 0);
 
             // Annual Target Progress
             const progressPercentage = (ytdProfit / targets.annualProfit) * 100;
@@ -931,6 +1397,7 @@
         }
 
         function renderDetailedCharts(data) {
+            if (!data.detailedCostOfSales || data.detailedCostOfSales.length === 0) return;
             const totalCoS = data.detailedCostOfSales.reduce((sum, item) => sum + item.value, 0);
             const totalOpEx = data.detailedOtherExpenses.reduce((sum, item) => sum + item.value, 0);
 
@@ -1048,6 +1515,83 @@
             });
         }
         
+        function renderInventoryPerformanceTab(data) {
+             const inventoryDataSource = (data.inventoryData && data.inventoryData.length > 0) ? data.inventoryData : (data.historicalInventoryData || []);
+
+            if (inventoryDataSource.length === 0) {
+                inventorySelect.innerHTML = '<option value="">No inventory data available</option>';
+                inventoryAiInsightsContainer.classList.add('hidden');
+                return;
+            }
+
+            const allProducts = new Set();
+            inventoryDataSource.forEach(month => {
+                if (month && Array.isArray(month.products)) {
+                    month.products.forEach(product => allProducts.add(product.rangeName));
+                }
+            });
+            const sortedProducts = Array.from(allProducts).sort();
+
+            inventorySelect.innerHTML = '<option value="">Select a product...</option>';
+            sortedProducts.forEach(productName => {
+                const option = document.createElement('option');
+                option.value = productName;
+                option.textContent = productName;
+                inventorySelect.appendChild(option);
+            });
+
+            if (data.inventoryAnalysis && typeof data.inventoryAnalysis === 'string') {
+                inventoryAiInsightsContainer.innerHTML = data.inventoryAnalysis.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/[\*#]/g, '');
+                inventoryAiInsightsContainer.classList.remove('hidden');
+            } else {
+                inventoryAiInsightsContainer.classList.add('hidden');
+            }
+        }
+
+        function renderInventoryTrendChart() {
+            const selectedProduct = inventorySelect.value;
+            if (!selectedProduct) {
+                inventoryChartContainer.classList.add('hidden');
+                return;
+            }
+
+            const inventoryHistory = [];
+            const inventoryDataSource = (currentData.inventoryData && currentData.inventoryData.length > 0) ? currentData.inventoryData : (currentData.historicalInventoryData || []);
+            
+            inventoryDataSource.forEach(month => {
+                if (month && Array.isArray(month.products)) {
+                    const product = month.products.find(p => p.rangeName === selectedProduct);
+                    if (product) {
+                        inventoryHistory.push({
+                            month: month.month,
+                            value: product.value
+                        });
+                    }
+                }
+            });
+
+            inventoryHistory.sort((a, b) => parseMonthYear(a.month) - parseMonthYear(b.month));
+
+            inventoryChartContainer.classList.remove('hidden');
+            const labels = inventoryHistory.map(p => p.month);
+            const data = inventoryHistory.map(p => p.value);
+
+            if (chartInstances.inventoryTrendChart) chartInstances.inventoryTrendChart.destroy();
+            chartInstances.inventoryTrendChart = new Chart(document.getElementById('inventoryTrendChart'), {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Inventory Value',
+                        data,
+                        borderColor: '#10b981',
+                        tension: 0.1
+                    }]
+                },
+                options: getChartOptions(true)
+            });
+        }
+
         function renderHorizontalBarChart(canvasId, rawData, totalValue, threshold) {
             let mainItems = [];
             let otherTotal = 0;
@@ -1101,7 +1645,7 @@
         }
         
         function calculateProjectedProfit(fullData) {
-            if (!fullData || !fullData.monthlyData) return 0;
+            if (!fullData || !fullData.monthlyData || fullData.monthlyData.length === 0) return 0;
 
             // 1. Calculate Historical Trend Projection
             let profitGrowthRates = [];
@@ -1135,10 +1679,14 @@
             return blendedProjection;
         }
 
-        // --- CHATBOT FUNCTIONS ---
+        // --- CHATBOT FUNCTIONS (SCALABILITY FIX) ---
         async function handleChatSubmit() {
             const userQuery = chatInput.value.trim();
-            if (!userQuery || !currentData) return;
+            if (!userQuery) return;
+            if (!currentData) {
+                 addChatMessage("I can't answer questions until you've added some data.", 'bot');
+                 return;
+            }
 
             addChatMessage(userQuery, 'user');
             chatInput.value = '';
@@ -1146,25 +1694,21 @@
             const botMessageDiv = addChatMessage('...', 'bot');
             
             try {
-                const prompt = `You are a helpful financial assistant. 
+                const prompt = `You are a helpful financial assistant for Blind Designs. 
                 
                 **Business Context:**
-                - The financial year runs from March 1st to the end of February of the following calendar year.
-                - The current date is ${new Date().toDateString()}.
-                - Key financial targets are: 
-                    - Annual Net Profit: R${targets.annualProfit.toLocaleString('en-ZA')}
-                    - Net Profit Margin: ${targets.profitMargin}%
-                    - Material Costs as a percentage of Sales: ${targets.materialCostPercentage}%
+                - The financial year runs from March 1st to the end of February.
+                - Key Targets: Annual Profit R${targets.annualProfit.toLocaleString('en-ZA')}, Margin ${targets.profitMargin}%, Material Cost ${targets.materialCostPercentage}%.
 
-                **User's Data:**
-                The user's complete financial data is provided below in JSON format. Answer the user's question based ONLY on this data. Perform calculations if necessary. Be concise and clear. 
-                Data: ${JSON.stringify(currentData)}. 
+                **Data Source:**
+                Answer based ONLY on the structured JSON data below. Do not ask for documents.
+                JSON Data: ${JSON.stringify(currentData)}
                 
-                **User's Question:** ${userQuery}`;
+                **User Question:** ${userQuery}`;
                 
                 const requestBody = { contents: [{ parts: [{ text: prompt }] }] };
                 const apiKey = "AIzaSyC-yMxXO1HXwrRsN4Xz71363ul5HHtgxXA"; 
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent?key=${apiKey}`;
 
                 const response = await fetch(apiUrl, {
                     method: 'POST',
