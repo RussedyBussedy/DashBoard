@@ -240,6 +240,7 @@
             </section>
 
             <section id="dashboard-section" class="hidden space-y-8">
+                <!-- ... (Dashboard HTML same as before) ... -->
                 <h2 id="dashboard-title" class="text-2xl font-semibold text-gray-800">Dashboard & Analysis</h2>
 
                 <section id="general-health-indicators">
@@ -392,7 +393,6 @@
             </section>
         </main>
         
-        <!-- ... existing code for footer, modals, etc. ... -->
         <footer class="text-center mt-12 py-4 border-t border-gray-300">
             <p class="text-sm text-gray-500">Powered by Gemini & Firebase</p>
         </footer>
@@ -822,35 +822,48 @@
         async function processFiles() {
             if (uploadedFiles.length === 0) return showError("Please upload at least one PDF file.");
             
-            showStatus(`Uploading ${uploadedFiles.length} file(s) to secure storage...`);
+            // Hide previous errors
+            errorSection.classList.add('hidden');
             
             try {
-                const uploadPromises = uploadedFiles.map(async (file) => {
+                // 1. SEQUENTIAL UPLOAD
+                for (let i = 0; i < uploadedFiles.length; i++) {
+                    const file = uploadedFiles[i];
+                    showStatus(`Uploading file ${i + 1} of ${uploadedFiles.length}: ${file.name}...`);
+                    
                     const storageRef = ref(storage, `artifacts/${appId}/documents/${file.name}`);
                     await uploadBytes(storageRef, file);
+                    
                     const gsUri = `gs://${firebaseConfig.storageBucket}/artifacts/${appId}/documents/${file.name}`;
                     
+                    // Add to Firestore catalogue if not exists (simple add for now)
                     const docCollectionRef = collection(db, `artifacts/${appId}/public/data/documents`);
+                    // Optional: Query if exists to avoid duplicates, but simple add is faster for now.
                     await addDoc(docCollectionRef, {
                         name: file.name,
                         gsUri: gsUri,
                         createdAt: new Date(),
                     });
-                });
+                }
 
-                await Promise.all(uploadPromises);
+                showStatus(`All ${uploadedFiles.length} files uploaded. Sending to AI for analysis...`);
                 
-                showStatus("Files uploaded. AI is analyzing the documents...");
-                
-                // Instead of analyzing ALL documents every time (expensive), we analyze ONLY the new files for the staging area.
-                // The "Full History" context is preserved in the Chatbot via the JSON data.
-                const fileParts = await Promise.all(uploadedFiles.map(file => new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve({ inlineData: { mimeType: file.type, data: reader.result.split(',')[1] } });
-                    reader.onerror = reject;
-                    reader.readAsDataURL(file);
-                })));
+                // 2. PREPARE DATA FOR AI (Base64)
+                // Read files sequentially to avoid memory spike
+                const fileParts = [];
+                for (let i = 0; i < uploadedFiles.length; i++) {
+                    const file = uploadedFiles[i];
+                    showStatus(`Reading file ${i + 1} of ${uploadedFiles.length} for analysis...`);
+                    const base64Data = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
+                    });
+                    fileParts.push({ inlineData: { mimeType: file.type, data: base64Data } });
+                }
 
+                showStatus("AI is analyzing the documents... (This may take a minute)");
                 const newAnalysis = await getFinancialAnalysis(fileParts);
                 
                 // Trigger Staging/Review instead of auto-save
@@ -858,7 +871,7 @@
 
             } catch (e) {
                 console.error("Processing error:", e);
-                showError(`An error occurred during processing: ${e.message}`);
+                showError(`An error occurred: ${e.message}`);
             }
         }
 
@@ -1679,12 +1692,12 @@
             return blendedProjection;
         }
 
-        // --- CHATBOT FUNCTIONS (SCALABILITY FIX) ---
+        // --- CHATBOT FUNCTIONS ---
         async function handleChatSubmit() {
             const userQuery = chatInput.value.trim();
             if (!userQuery) return;
-            if (!currentData) {
-                 addChatMessage("I can't answer questions until you've added some data.", 'bot');
+            if (fileCatalogue.length === 0) {
+                 addChatMessage("I can't answer questions until you've uploaded some financial documents.", 'bot');
                  return;
             }
 
@@ -1694,21 +1707,31 @@
             const botMessageDiv = addChatMessage('...', 'bot');
             
             try {
-                const prompt = `You are a helpful financial assistant for Blind Designs. 
+                 const fileParts = fileCatalogue.map(file => ({
+                    fileData: {
+                        mimeType: 'application/pdf',
+                        fileUri: file.gsUri
+                    }
+                }));
+
+                const prompt = `You are a helpful financial assistant. 
                 
                 **Business Context:**
-                - The financial year runs from March 1st to the end of February.
-                - Key Targets: Annual Profit R${targets.annualProfit.toLocaleString('en-ZA')}, Margin ${targets.profitMargin}%, Material Cost ${targets.materialCostPercentage}%.
+                - The financial year runs from March 1st to the end of February of the following calendar year.
+                - The current date is ${new Date().toDateString()}.
+                - Key financial targets are: 
+                    - Annual Net Profit: R${targets.annualProfit.toLocaleString('en-ZA')}
+                    - Net Profit Margin: ${targets.profitMargin}%
+                    - Material Costs as a percentage of Sales: ${targets.materialCostPercentage}%
 
-                **Data Source:**
-                Answer based ONLY on the structured JSON data below. Do not ask for documents.
-                JSON Data: ${JSON.stringify(currentData)}
+                **User's Data:**
+                The user's complete financial history is contained in the attached documents. Answer the user's question based ONLY on the data within these documents. Perform calculations if necessary. Be concise and clear. The dashboard's current JSON data is also provided for quick reference to the latest analysis: ${JSON.stringify(currentData)}. 
                 
-                **User Question:** ${userQuery}`;
+                **User's Question:** ${userQuery}`;
                 
-                const requestBody = { contents: [{ parts: [{ text: prompt }] }] };
+                const requestBody = { contents: [{ parts: [{ text: prompt }, ...fileParts] }] };
                 const apiKey = "AIzaSyC-yMxXO1HXwrRsN4Xz71363ul5HHtgxXA"; 
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent?key=${apiKey}`;
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
 
                 const response = await fetch(apiUrl, {
                     method: 'POST',
