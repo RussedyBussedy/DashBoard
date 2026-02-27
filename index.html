@@ -720,7 +720,7 @@
         // --- SETTINGS MANAGEMENT ---
         async function loadSettings() {
             try {
-                const docRef = doc(db, `artifacts/${appId}/public/data/settings`);
+                const docRef = doc(db, `artifacts/${appId}/public/data/settings/default`);
                 const docSnap = await getDoc(docRef);
                 if (docSnap.exists()) {
                     const savedTargets = docSnap.data();
@@ -748,7 +748,7 @@
             };
 
             try {
-                const docRef = doc(db, `artifacts/${appId}/public/data/settings`);
+                const docRef = doc(db, `artifacts/${appId}/public/data/settings/default`);
                 await setDoc(docRef, targets);
                 settingsModal.classList.add('hidden');
                 // Re-render dashboard with new targets if data exists
@@ -1102,7 +1102,7 @@
                 const batch = writeBatch(db);
                 const dashboardDocRef = doc(db, `artifacts/${appId}/public/data/dashboard/latest`);
                 batch.delete(dashboardDocRef);
-                const settingsDocRef = doc(db, `artifacts/${appId}/public/data/settings`);
+                const settingsDocRef = doc(db, `artifacts/${appId}/public/data/settings/default`);
                 batch.delete(settingsDocRef);
                 
                 fileCatalogue.forEach(file => {
