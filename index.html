@@ -514,7 +514,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, onSnapshot, deleteDoc, collection, addDoc, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
@@ -620,7 +620,7 @@
         };
 
         // --- FIREBASE CONFIGURATION ---
-        const firebaseConfig = {
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
             apiKey: "AIzaSyBnOemVRN1BeLJsu3Eys8ZQdttyex9h3Gc",
             authDomain: "dashboard-e830a.firebaseapp.com",
             projectId: "dashboard-e830a",
@@ -629,7 +629,7 @@
             appId: "1:637034789575:web:09e0041d43ea411c851ce2",
             measurementId: "G-3QZ1FPH8DF"
         };
-        const appId = firebaseConfig.appId;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : firebaseConfig.appId;
 
         // --- INITIALIZATION ---
         async function initialize() {
@@ -646,8 +646,13 @@
                         setupRealtimeListeners();
                     }
                 });
+                
                 statusText.textContent = 'Authenticating...';
-                await signInAnonymously(auth);
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
             } catch (e) {
                 console.error("Firebase initialization error:", e);
                 if (e.code === "auth/configuration-not-found") {
@@ -719,7 +724,7 @@
         // --- SETTINGS MANAGEMENT ---
         async function loadSettings() {
             try {
-                const docRef = doc(db, `artifacts/${appId}/public/data/settings`);
+                const docRef = doc(db, `artifacts/${appId}/public/data/config/settings`);
                 const docSnap = await getDoc(docRef);
                 if (docSnap.exists()) {
                     const savedTargets = docSnap.data();
@@ -747,7 +752,7 @@
             };
 
             try {
-                const docRef = doc(db, `artifacts/${appId}/public/data/settings`);
+                const docRef = doc(db, `artifacts/${appId}/public/data/config/settings`);
                 await setDoc(docRef, targets);
                 settingsModal.classList.add('hidden');
                 // Re-render dashboard with new targets if data exists
@@ -1047,6 +1052,9 @@
                     saveData(currentData);
                     uploadSection.classList.remove('hidden');
                 }
+            }, (error) => {
+                console.error("Error fetching dashboard data:", error);
+                showError("Permission denied: Unable to access dashboard data. Make sure you are using the embedded environment variables.");
             });
 
             // Listener for the document catalogue
@@ -1057,6 +1065,8 @@
                 });
                 renderCatalogue(fileCatalogue);
                 catalogueSection.classList.toggle('hidden', fileCatalogue.length === 0);
+            }, (error) => {
+                console.error("Error fetching document catalogue:", error);
             });
         }
         
@@ -1101,7 +1111,7 @@
                 const batch = writeBatch(db);
                 const dashboardDocRef = doc(db, `artifacts/${appId}/public/data/dashboard/latest`);
                 batch.delete(dashboardDocRef);
-                const settingsDocRef = doc(db, `artifacts/${appId}/public/data/settings`);
+                const settingsDocRef = doc(db, `artifacts/${appId}/public/data/config/settings`);
                 batch.delete(settingsDocRef);
                 
                 fileCatalogue.forEach(file => {
